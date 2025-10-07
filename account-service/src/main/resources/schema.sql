@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS accounts (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(100) NOT NULL,
+    email VARCHAR(150),
+    currency VARCHAR(10) DEFAULT 'USD',
+    balance DOUBLE PRECISION DEFAULT 0
+);
