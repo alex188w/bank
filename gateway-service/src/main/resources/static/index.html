@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Банк — Счета и Конвертация</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+            line-height: 1.5;
+        }
+
+        h1,
+        h3 {
+            margin-bottom: 10px;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 60%;
+            margin-top: 10px;
+        }
+
+        th,
+        td {
+            border: 1px solid #aaa;
+            padding: 8px 10px;
+            text-align: center;
+        }
+
+        input,
+        select,
+        button {
+            margin: 5px;
+            padding: 5px 8px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>💰 Банк — счета и конвертация валют</h1>
+
+    <!-- 🔁 Блок конвертации -->
+    <div class="section">
+        <h3>Конвертация валют</h3>
+        <label>Из:</label>
+        <select id="fromCurrency">
+            <option>USD</option>
+            <option>EUR</option>
+            <option>RUB</option>
+        </select>
+
+        <label>В:</label>
+        <select id="toCurrency">
+            <option>USD</option>
+            <option>EUR</option>
+            <option>RUB</option>
+        </select>
+
+        <input id="amount" type="number" placeholder="Сумма" />
+        <button onclick="convertCurrency()">Конвертировать</button>
+        <span id="result"></span>
+    </div>
+
+    <!-- 🧾 Создание и список счетов -->
+    <div class="section">
+        <h3>Создать счёт</h3>
+        <input id="username" placeholder="Имя пользователя" />
+        <input id="currency" placeholder="Валюта (например USD)" />
+        <button onclick="createAccount()">Создать</button>
+    </div>
+
+    <div class="section">
+        <h3>Счета</h3>
+        <button onclick="loadAccounts()">Обновить</button>
+        <table id="accountsTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Валюта</th>
+                    <th>Баланс</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script>
+        const API = 'http://localhost:8080/api/accounts';
+        const CASH_API = 'http://localhost:8080/api/cash';
+        const EXCHANGE_API = 'http://localhost:8080/api/exchange';
+
+        async function loadAccounts() {
+            const res = await fetch(API);
+            const accounts = await res.json();
+            const tbody = document.querySelector('#accountsTable tbody');
+            tbody.innerHTML = '';
+            accounts.forEach(acc => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${acc.id}</td>
+                    <td>${acc.currency}</td>
+                    <td>${acc.balance}</td>
+                    <td>
+                        <button onclick="deposit(${acc.id})">Положить 100</button>
+                        <button onclick="withdraw(${acc.id})">Снять 100</button>
+                    </td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function createAccount() {
+            const currency = document.getElementById('currency').value;
+            const username = document.getElementById('username').value;
+            await fetch(API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username,
+                    ownerId: username,
+                    currency,
+                    balance: 0
+                })
+            });
+            loadAccounts();
+        }
+
+        async function deposit(id) {
+            try {
+                const res = await fetch(`${CASH_API}/deposit/${id}?amount=100`, { method: 'POST' });
+                if (!res.ok) throw new Error(`Ошибка: ${res.status}`);
+                setTimeout(loadAccounts, 500);
+            } catch (err) {
+                console.error("Deposit failed:", err);
+                alert("Ошибка при пополнении счёта");
+            }
+        }
+
+        async function withdraw(id) {
+            await fetch(`${API}/${id}/withdraw?amount=100`, { method: 'POST' });
+            loadAccounts();
+        }
+
+        async function convertCurrency() {
+            const from = document.getElementById('fromCurrency').value;
+            const to = document.getElementById('toCurrency').value;
+            const amount = document.getElementById('amount').value;
+            const resultSpan = document.getElementById('result');
+
+            try {
+                const res = await fetch(`${EXCHANGE_API}/convert?from=${from}&to=${to}&amount=${amount}`);
+                if (!res.ok) throw new Error(`Ошибка: ${res.status}`);
+                const data = await res.json();
+                resultSpan.textContent = `= ${data.result.toFixed(2)} ${to}`;
+            } catch (err) {
+                console.error("Conversion failed:", err);
+                resultSpan.textContent = "Ошибка при конвертации";
+            }
+        }
+
+        loadAccounts();
+    </script>
+</body>
+
+</html>

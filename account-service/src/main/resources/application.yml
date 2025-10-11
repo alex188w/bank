@@ -3,15 +3,30 @@ spring:
     name: account-service
 
   r2dbc:
-    url: ${DB_URL}
-    username: ${DB_USER}
-    password: ${DB_PASS}
+    url: r2dbc:postgresql://localhost:5432/bank?currentSchema=account
+    username: postgres
+    password: Fd18091971
 
-  main:
-    web-application-type: reactive
+  sql:
+    init:
+      mode: never
+
+#   flyway:
+#     url: jdbc:postgresql://localhost:5432/bank
+#     user: postgres
+#     password: Fd18091971
+#     schemas: account
+#     locations: classpath:db/migration/account
+
+  cloud:
+    consul:
+      host: localhost
+      port: 8500
+      discovery:
+        enabled: true
 
 server:
-  port: ${ACCOUNT_PORT:8081}
+  port: 8082
 
 logging:
   level:

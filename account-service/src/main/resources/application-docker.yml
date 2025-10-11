@@ -1,0 +1,10 @@
+spring:
+  r2dbc:
+    url: r2dbc:postgresql://host.docker.internal:5432/bank?currentSchema=account
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
+
+  flyway:
+    url: jdbc:postgresql://host.docker.internal:5432/bank
+    user: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}

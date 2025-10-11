@@ -1,17 +1,38 @@
 spring:
   application:
-    name: gateway-service
-
-server:
-  port: ${GATEWAY_PORT:8080}
-
-spring:
+    name: gateway
   cloud:
+    consul:
+      discovery:
+        enabled: false  # отключаем поиск через Consul
     gateway:
       routes:
-        - id: account-service
-          uri: http://account-service:${ACCOUNT_PORT:8081}
+        - id: cash
+          uri: http://localhost:8083  # напрямую на сервис
           predicates:
-            - Path=/accounts/**
+            - Path=/api/cash/**
           filters:
-            - RewritePath=/accounts/(?<segment>.*), /${segment}
+            - StripPrefix=1
+
+        - id: accounts
+          uri: http://localhost:8082
+          predicates:
+            - Path=/api/accounts/**
+          filters:
+            - StripPrefix=1
+
+        - id: exchange
+          uri: http://localhost:8084
+          predicates:
+            - Path=/api/exchange/**
+          filters:
+            - StripPrefix=1
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
