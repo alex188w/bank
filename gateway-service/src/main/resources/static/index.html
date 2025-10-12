@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Банк — Счета и Конвертация</title>
+    <title>Банк — Счета и Курсы валют</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -18,7 +18,7 @@
 
         table {
             border-collapse: collapse;
-            width: 60%;
+            width: 70%;
             margin-top: 10px;
         }
 
@@ -32,7 +32,7 @@
         input,
         select,
         button {
-            margin: 5px;
+            margin: 3px;
             padding: 5px 8px;
         }
 
@@ -42,32 +42,43 @@
             border: 1px solid #ddd;
             border-radius: 6px;
         }
+
+        input.amount-input {
+            width: 80px;
+            text-align: right;
+        }
     </style>
 </head>
 
 <body>
-    <h1>💰 Банк — счета и конвертация валют</h1>
+    <h1>💰 Банк — счета и курсы валют</h1>
 
-    <!-- 🔁 Блок конвертации -->
+    <!-- <h2>Курсы валют</h2>
+    <table id="ratesTable" border="1">
+        <thead>
+            <tr>
+                <th>Валюта</th>
+                <th>Покупка</th>
+                <th>Продажа</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table> -->
+
+    <!-- 🔁 Курсы валют -->
     <div class="section">
-        <h3>Конвертация валют</h3>
-        <label>Из:</label>
-        <select id="fromCurrency">
-            <option>USD</option>
-            <option>EUR</option>
-            <option>RUB</option>
-        </select>
-
-        <label>В:</label>
-        <select id="toCurrency">
-            <option>USD</option>
-            <option>EUR</option>
-            <option>RUB</option>
-        </select>
-
-        <input id="amount" type="number" placeholder="Сумма" />
-        <button onclick="convertCurrency()">Конвертировать</button>
-        <span id="result"></span>
+        <h3>Курсы валют (относительно RUB)</h3>
+        <button onclick="loadRates()">Обновить</button>
+        <table id="ratesTable">
+            <thead>
+                <tr>
+                    <th>Валюта</th>
+                    <th>Покупка</th>
+                    <th>Продажа</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
     </div>
 
     <!-- 🧾 Создание и список счетов -->
@@ -87,6 +98,7 @@
                     <th>ID</th>
                     <th>Валюта</th>
                     <th>Баланс</th>
+                    <th>Сумма</th>
                     <th>Действия</th>
                 </tr>
             </thead>
@@ -97,7 +109,22 @@
     <script>
         const API = 'http://localhost:8080/api/accounts';
         const CASH_API = 'http://localhost:8080/api/cash';
-        const EXCHANGE_API = 'http://localhost:8080/api/exchange';
+        const EXCHANGE_API = 'http://localhost:8084/exchange';
+
+        // async function loadRates() {
+        //     const res = await fetch(`${EXCHANGE_API}/rates`);
+        //     const rates = await res.json();
+        //     const tbody = document.querySelector('#ratesTable tbody');
+        //     tbody.innerHTML = '';
+        //     rates.forEach(rate => {
+        //         const tr = document.createElement('tr');
+        //         tr.innerHTML = `
+        //             <td>${rate.currency}</td>
+        //             <td>${rate.buy}</td>
+        //             <td>${rate.sell}</td>`;
+        //         tbody.appendChild(tr);
+        //     });
+        // }
 
         async function loadAccounts() {
             const res = await fetch(API);
@@ -110,9 +137,10 @@
                     <td>${acc.id}</td>
                     <td>${acc.currency}</td>
                     <td>${acc.balance}</td>
+                    <td><input id="amount-${acc.id}" class="amount-input" type="number" min="1" value=""></td>
                     <td>
-                        <button onclick="deposit(${acc.id})">Положить 100</button>
-                        <button onclick="withdraw(${acc.id})">Снять 100</button>
+                        <button onclick="deposit(${acc.id})">Положить</button>
+                        <button onclick="withdraw(${acc.id})">Снять</button>
                     </td>`;
                 tbody.appendChild(tr);
             });
@@ -135,10 +163,11 @@
         }
 
         async function deposit(id) {
+            const amount = document.getElementById(`amount-${id}`).value || 0;
             try {
-                const res = await fetch(`${CASH_API}/deposit/${id}?amount=100`, { method: 'POST' });
+                const res = await fetch(`${CASH_API}/deposit/${id}?amount=${amount}`, { method: 'POST' });
                 if (!res.ok) throw new Error(`Ошибка: ${res.status}`);
-                setTimeout(loadAccounts, 500);
+                setTimeout(loadAccounts, 300);
             } catch (err) {
                 console.error("Deposit failed:", err);
                 alert("Ошибка при пополнении счёта");
@@ -146,27 +175,43 @@
         }
 
         async function withdraw(id) {
-            await fetch(`${API}/${id}/withdraw?amount=100`, { method: 'POST' });
-            loadAccounts();
-        }
-
-        async function convertCurrency() {
-            const from = document.getElementById('fromCurrency').value;
-            const to = document.getElementById('toCurrency').value;
-            const amount = document.getElementById('amount').value;
-            const resultSpan = document.getElementById('result');
-
+            const amount = document.getElementById(`amount-${id}`).value || 0;
             try {
-                const res = await fetch(`${EXCHANGE_API}/convert?from=${from}&to=${to}&amount=${amount}`);
+                const res = await fetch(`${API}/${id}/withdraw?amount=${amount}`, { method: 'POST' });
                 if (!res.ok) throw new Error(`Ошибка: ${res.status}`);
-                const data = await res.json();
-                resultSpan.textContent = `= ${data.result.toFixed(2)} ${to}`;
+                setTimeout(loadAccounts, 300);
             } catch (err) {
-                console.error("Conversion failed:", err);
-                resultSpan.textContent = "Ошибка при конвертации";
+                console.error("Withdraw failed:", err);
+                alert("Ошибка при снятии средств");
             }
         }
 
+        async function loadRates() {
+            try {
+                const res = await fetch(`${EXCHANGE_API}/rates`);
+                if (!res.ok) throw new Error(res.statusText);
+                const rates = await res.json();
+
+                const tbody = document.querySelector('#ratesTable tbody');
+                tbody.innerHTML = '';
+                rates.forEach(r => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                <td>${r.currency}</td>
+                <td>${(+r.buy).toFixed(2)}</td>
+                <td>${(+r.sell).toFixed(2)}</td>`;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                console.error('Ошибка при загрузке курсов:', err);
+            }
+        }
+
+        // обновляем при загрузке страницы
+        setTimeout(loadRates, 300);
+
+        // обновляем раз в минуту
+        setInterval(loadRates, 60000);
         loadAccounts();
     </script>
 </body>

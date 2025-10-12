@@ -15,6 +15,7 @@
         <module>gateway-service</module>
         <module>cash-service</module>
         <module>exchange-service</module>
+        <module>exchange-generator</module>
     </modules>
 
     <parent>

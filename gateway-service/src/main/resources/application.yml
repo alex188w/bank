@@ -28,6 +28,13 @@ spring:
           filters:
             - StripPrefix=1
 
+        - id: exchangeGenerator
+          uri: http://localhost:8084
+          predicates:
+            - Path=/api/exchangeGenerator/**
+          filters:
+            - StripPrefix=1
+
 server:
   port: 8080
 
