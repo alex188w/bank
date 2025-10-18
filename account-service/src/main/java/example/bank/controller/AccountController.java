@@ -6,11 +6,15 @@ import example.bank.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/accounts")
@@ -35,12 +39,13 @@ public class AccountController {
     }
 
     @PostMapping("/{id}/deposit")
-    public Mono<Account> deposit(@PathVariable Long id, @RequestParam BigDecimal amount) {
+    public Mono<Void> deposit(@PathVariable Long id, @RequestParam BigDecimal amount) {
+        log.info("Deposit request: id={}, amount={}", id, amount);
         return service.deposit(id, amount);
     }
 
     @PostMapping("/{id}/withdraw")
-    public Mono<Account> withdraw(@PathVariable Long id, @RequestParam BigDecimal amount) {
+    public Mono<Void> withdraw(@PathVariable Long id, @RequestParam BigDecimal amount) {
         return service.withdraw(id, amount);
     }
 }

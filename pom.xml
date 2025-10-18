@@ -16,7 +16,8 @@
         <module>cash-service</module>
         <module>exchange-service</module>
         <module>exchange-generator</module>
-    </modules>
+        <module>auth-service</module>
+    </modules> 
 
     <parent>
         <groupId>org.springframework.boot</groupId>
@@ -62,6 +63,36 @@
                         <source>${java.version}</source>
                         <target>${java.version}</target>
                     </configuration>
+                </plugin>
+                <!-- Для одновременного запуска нескольких сервисов -->
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>exec-maven-plugin</artifactId>
+                    <version>3.6.1</version>
+                    <executions>
+                        <execution>
+                            <id>run-all</id>
+                            <phase>none</phase>
+                            <goals>
+                                <goal>exec</goal>
+                            </goals>
+                            <configuration>
+                                <executable>bash</executable>
+                                <arguments>
+                                    <argument>-c</argument>
+                                    <argument>
+                                        ./mvnw -pl auth-service spring-boot:run &amp;
+                                        ./mvnw -pl gateway-service spring-boot:run &amp;
+                                        ./mvnw -pl account-service spring-boot:run &amp;
+                                        ./mvnw -pl cash-service spring-boot:run &amp;
+                                        ./mvnw -pl exchange-generator spring-boot:run &amp;
+                                        ./mvnw -pl exchange-service spring-boot:run;
+                                        wait
+                                    </argument>
+                                </arguments>
+                            </configuration>
+                        </execution>
+                    </executions>
                 </plugin>
             </plugins>
         </pluginManagement>

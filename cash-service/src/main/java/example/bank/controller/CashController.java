@@ -7,31 +7,29 @@ import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 
-@RequiredArgsConstructor
 @RestController
 @RequestMapping("/cash")
+@RequiredArgsConstructor
 public class CashController {
 
-    private final WebClient plainWebClient; // теперь этот бин будет обычным HTTP клиентом
+    private final WebClient accountWebClient;
 
     @PostMapping("/deposit/{accountId}")
     public Mono<Void> deposit(@PathVariable Long accountId,
-            @RequestParam BigDecimal amount) {
-        return plainWebClient.post()
-                .uri("http://localhost:8082/accounts/{id}/deposit?amount={amount}", accountId, amount)
+                              @RequestParam BigDecimal amount) {
+        return accountWebClient.post()
+                .uri("/accounts/{id}/deposit?amount={amount}", accountId, amount)
                 .retrieve()
-                .bodyToMono(String.class) // <- строка вместо Void
-                .then(); // чтобы вернуть Mono<Void>
+                .bodyToMono(Void.class);
     }
 
     @PostMapping("/withdraw/{accountId}")
     public Mono<Void> withdraw(@PathVariable Long accountId,
-            @RequestParam BigDecimal amount) {
-        return plainWebClient.post()
-                .uri("http://localhost:8082/accounts/{id}/withdraw?amount={amount}", accountId, amount)
+                               @RequestParam BigDecimal amount) {
+        return accountWebClient.post()
+                .uri("/accounts/{id}/withdraw?amount={amount}", accountId, amount)
                 .retrieve()
-                .bodyToMono(String.class) // <- строка вместо Void
-                .then(); // чтобы вернуть Mono<Void>
+                .bodyToMono(Void.class);
     }
 }
 
