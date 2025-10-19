@@ -39,6 +39,15 @@ spring:
         jwt:
           issuer-uri: http://localhost:8090/realms/bank
 
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5432/bank?currentSchema=users
+    username: postgres
+    password: Fd18091971
+
+  # sql:
+  #   init:
+  #     mode: never
+  
   webflux:
     static-path-pattern: "/static/**"
           
@@ -94,6 +103,12 @@ management:
     web:
       exposure:
         include: health,info
+
+keycloak:
+  server-url: http://localhost:8090
+  realm: bank
+  client-id: gateway-service
+  client-secret: aWG86UNepKSN5eBVQi4FynLGw9ao3Yy0
 
 logging:
   level:

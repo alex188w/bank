@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Авторизация</title>
+    <style>
+        body {
+            background-color: #007bff;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 30px 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            width: 380px;
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        form label {
+            display: block;
+            margin-bottom: 10px;
+            text-align: left;
+            color: #555;
+        }
+
+        form input {
+            width: 100%;
+            padding: 8px 10px;
+            margin-top: 5px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .message {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        .error {
+            color: red;
+        }
+
+        .toggle-link {
+            margin-top: 15px;
+            display: block;
+            color: #007bff;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Регистрация нового пользователя</h2>
+
+    <div th:if="${param.error}" style="color: red;">
+        Ошибка регистрации. Проверьте введённые данные.
+    </div>
+
+    <form th:action="@{/user/register}" method="post" th:object="${user}">
+        <label>Фамилия:</label>
+        <input type="text" th:field="*{lastName}" required /><br />
+
+        <label>Имя:</label>
+        <input type="text" th:field="*{firstName}" required /><br />
+
+        <label>Email:</label>
+        <input type="email" th:field="*{email}" required /><br />
+
+        <label>Дата рождения:</label>
+        <input type="date" th:field="*{birthDate}" required /><br />
+
+        <label>Логин:</label>
+        <input type="text" th:field="*{username}" required /><br />
+
+        <label>Пароль:</label>
+        <input type="password" th:field="*{password}" required /><br />
+
+        <button type="submit">Зарегистрироваться</button>
+    </form>
+</body>
+
+</html>

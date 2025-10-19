@@ -23,9 +23,16 @@ public class AccountController {
     private final AccountRepository repository;
     private final AccountService service;
 
+    // Возвращаем счета конкретного пользователя
     @GetMapping
-    public Flux<Account> all() {
-        return repository.findAll();
+    public Flux<Account> getAccounts(@RequestParam(required = false) String username) {
+        if (username != null) {
+            log.info("Запрос счетов пользователя: {}", username);
+            return repository.findByUsername(username);
+        } else {
+            log.info("Запрос всех счетов");
+            return Flux.empty(); // или можно выбросить ошибку
+        }
     }
 
     @GetMapping("/{id}")
@@ -33,8 +40,13 @@ public class AccountController {
         return repository.findById(id);
     }
 
-    @PostMapping
-    public Mono<Account> create(@RequestBody Account account) {
+    @PostMapping("/create")
+    public Mono<Account> createAccount(@RequestBody Account account) {
+        if (account.getBalance() == null)
+            account.setBalance(BigDecimal.ZERO);
+        if (account.getOwnerId() == null)
+            account.setOwnerId(account.getUsername());
+        log.info("Аккаунт создан: {}", account);
         return repository.save(account);
     }
 
@@ -46,6 +58,7 @@ public class AccountController {
 
     @PostMapping("/{id}/withdraw")
     public Mono<Void> withdraw(@PathVariable Long id, @RequestParam BigDecimal amount) {
+        log.info("Withdraw request: id={}, amount={}", id, amount);
         return service.withdraw(id, amount);
     }
 }

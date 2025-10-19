@@ -13,22 +13,20 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 public class SecurityConfig {
 
     @Bean
-    public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
+    public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(exchanges -> exchanges
-                        .pathMatchers("/actuator/**", "/accounts/**").permitAll()
-                        // .pathMatchers("/accounts/**").hasRole("SERVICE")
+                        .pathMatchers("/actuator/**", "/transfer/**").permitAll()
+                        // .pathMatchers("/cash/deposit/**").hasAuthority("SERVICE_ACCESS")
                         .anyExchange().authenticated()
                 )
-                // Новый способ: через явно указанный jwtDecoder()
                 .oauth2ResourceServer(oauth2 -> 
                         oauth2.jwt(jwt -> jwt.jwtDecoder(jwtDecoder()))
                 )
                 .build();
     }
 
-    // Указываем, где искать JWKS (ключи для подписи токена)
     @Bean
     public ReactiveJwtDecoder jwtDecoder() {
         return NimbusReactiveJwtDecoder.withJwkSetUri(

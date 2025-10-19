@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Профиль пользователя</title>
+</head>
+
+<body>
+    <h2>Профиль</h2>
+
+    <!-- Сообщения -->
+    <div th:if="${param.success}" style="color: green;">Данные успешно обновлены</div>
+    <div th:if="${param.error}" style="color: red;">Ошибка! Проверьте данные.</div>
+    <div th:if="${param.error == 'balance'}" style="color: red;">Нельзя удалить пользователя: на счетах есть деньги!
+    </div>
+
+    <form th:action="@{/user/profile}" method="post" th:object="${user}">
+        <label>Логин:</label>
+        <input type="text" th:field="*{username}" readonly /><br />
+
+        <label>Фамилия:</label>
+        <input type="text" th:field="*{lastName}" required /><br />
+
+        <label>Имя:</label>
+        <input type="text" th:field="*{firstName}" required /><br />
+
+        <label>Email:</label>
+        <input type="email" th:field="*{email}" required /><br />
+
+        <label>Дата рождения:</label>
+        <input type="date" th:field="*{birthDate}" required /><br />
+
+        <button type="submit">Сохранить изменения</button>
+    </form>
+
+    <form th:action="@{/user/delete}" method="post" style="margin-top: 20px;">
+        <button type="submit" style="color: red;">Удалить аккаунт</button>
+    </form>
+
+</body>
+
+</html>

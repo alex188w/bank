@@ -58,7 +58,7 @@
     <h1>💰 Банк — счета и курсы валют</h1>
 
     <div id="user-info">
-        <span id="greeting">Привет!</span>
+        <div id="greeting">Привет, <span id="username"></span>!</div>
         <button onclick="logout()">Выйти</button>
     </div>
 
@@ -83,162 +83,84 @@
         </table>
     </div>
 
-    <!-- 🧾 Создание счёта -->
     <div class="section">
         <h3>Создать счёт</h3>
-        <form action="/accounts" method="post">
-            <input name="username" placeholder="Имя пользователя" required />
+        <form th:action="@{/accounts/create}" method="get">
             <input name="currency" placeholder="Валюта (например USD)" required />
             <button type="submit">Создать</button>
         </form>
     </div>
 
-    <!-- 💳 Счета -->
-    <div class="section">
-        <h3>Счета</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Валюта</th>
-                    <th>Баланс</th>
-                    <th>Пополнить</th>
-                    <th>Снять</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr th:each="acc : ${accounts}">
-                    <td th:text="${acc.id}"></td>
-                    <td th:text="${acc.currency}"></td>
-                    <td th:text="${acc.balance}"></td>
-                    <td>
-                        <form th:action="@{/cash/deposit/{id}(id=${acc.id})}" method="get">
-                            <input name="amount" type="number" step="0.01" placeholder="Сумма" required />
-                            <button type="submit">Пополнить</button>
-                        </form>
-                    </td>
-                    <td>
-                        <form th:action="@{/cash/withdraw/{id}(id=${acc.id})}" method="get">
-                            <input name="amount" type="number" step="0.01" placeholder="Сумма" required />
-                            <button type="submit">Снять</button>
-                        </form>
-                    </td>
-                    <!-- <td>
-                        <form th:action="@{/accounts/{id}/withdraw(id=${acc.id})}" method="post">
-                            <input name="amount" type="number" placeholder="Сумма" step="0.01" required />
-                            <button type="submit">Снять</button>
-                        </form>
-                    </td> -->
-                </tr>
-            </tbody>
-        </table>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Валюта</th>
+                <th>Баланс</th>
+                <th>Пополнить</th>
+                <th>Снять</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="acc : ${accounts}">
+                <td th:text="${acc.id}"></td>
+                <td th:text="${acc.currency}"></td>
+                <td th:text="${acc.balance}"></td>
+                <td>
+                    <form th:action="@{/cash/deposit/{id}(id=${acc.id})}" method="get">
+                        <input name="amount" type="number" step="0.01" placeholder="Сумма" required />
+                        <button type="submit">Пополнить</button>
+                    </form>
+                </td>
+                <td>
+                    <form th:action="@{/cash/withdraw/{id}(id=${acc.id})}" method="get">
+                        <input name="amount" type="number" step="0.01" placeholder="Сумма" required />
+                        <button type="submit">Снять</button>
+                    </form>
+                </td>
+            </tr>
+        </tbody>
+
+        <div th:if="${transferMessage}" style="color:red; font-weight:bold; margin-bottom:10px;">
+            <p th:text="${transferMessage}"></p>
+        </div>
+
+        <h3>Перевести между счетами</h3>
+        <form action="/transfer" method="post">
+            <label>Со счёта (ID):</label>
+            <input type="number" name="fromId" required>
+            <label>На счёт (ID):</label>
+            <input type="number" name="toId" required>
+            <label>Имя получателя:</label>
+            <input type="text" name="toUsername" required>
+            <label>Сумма:</label>
+            <input type="number" name="amount" step="0.01" required>
+            <button type="submit">Перевести</button>
+        </form>
+    </table>
     </div>
 
 
     <script>
-        // const API = '/api/accounts';
-        // const CASH_API = '/api/cash';
-        // const EXCHANGE_API = '/api/exchange';
-
-
-        // async function fetchJson(url, options) {
-        //     const response = await fetch(url, options);
-        //     if (response.ok && response.status !== 204) {
-        //         try {
-        //             return await response.json();
-        //         } catch {
-        //             return {};
-        //         }
-        //     }
-        //     throw new Error(`HTTP ${response.status}`);
-        // }
-
-        // async function loadAccounts() {
-        //     try {
-        //         const accounts = await fetchJson(API);
-        //         const tbody = document.querySelector('#accountsTable tbody');
-        //         tbody.innerHTML = '';
-        //         accounts.forEach(acc => {
-        //             const tr = document.createElement('tr');
-        //             tr.innerHTML = `
-        //     <td>${acc.id}</td>
-        //     <td>${acc.currency}</td>
-        //     <td>${acc.balance}</td>
-        //     <td><input id="amount-${acc.id}" class="amount-input" type="number" min="1" value=""></td>
-        //     <td>
-        //         <button onclick="deposit(${acc.id})">Положить</button>
-        //         <button onclick="withdraw(${acc.id})">Снять</button>
-        //     </td>`;
-        //             tbody.appendChild(tr);
-        //         });
-        //     } catch (err) {
-        //         console.error('Ошибка при загрузке счетов:', err);
-        //     }
-        // }
-
-        // async function deposit(id) {
-        //     const amount = document.getElementById(`amount-${id}`).value || 0;
-        //     try {
-        //         await fetchJson(`${CASH_API}/deposit/${id}?amount=${amount}`, { method: 'POST' });
-        //         setTimeout(loadAccounts, 300);
-        //     } catch (err) {
-        //         console.error('Deposit failed:', err);
-        //         alert('Ошибка при пополнении счёта');
-        //     }
-        // }
-
-        // async function withdraw(id) {
-        //     const amount = document.getElementById(`amount-${id}`).value || 0;
-        //     try {
-        //         await fetchJson(`${API}/${id}/withdraw?amount=${amount}`, { method: 'POST' });
-        //         setTimeout(loadAccounts, 300);
-        //     } catch (err) {
-        //         console.error('Withdraw failed:', err);
-        //         alert('Ошибка при снятии средств');
-        //     }
-        // }
-
-        // async function loadRates() {
-        //     try {
-        //         const rates = await fetchJson(`${EXCHANGE_API}/rates`);
-        //         const tbody = document.querySelector('#ratesTable tbody');
-        //         tbody.innerHTML = '';
-        //         rates.forEach(r => {
-        //             const tr = document.createElement('tr');
-        //             tr.innerHTML = `
-        //     <td>${r.currency}</td>
-        //     <td>${(+r.buy).toFixed(2)}</td>
-        //     <td>${(+r.sell).toFixed(2)}</td>`;
-        //             tbody.appendChild(tr);
-        //         });
-        //     } catch (err) {
-        //         console.error('Ошибка при загрузке курсов:', err);
-        //     }
-        // }
-
         // Загрузка пользователя
-        async function loadUser() {
-            try {
-                const res = await fetch('/api/user');
-                if (!res.ok) throw new Error(res.statusText);
-                const user = await res.json();
-                document.getElementById('greeting').textContent = `Привет, ${user.name}!`;
-            } catch (err) {
-                console.error('Ошибка при получении пользователя:', err);
-            }
-        }
+        fetch('/api/user')
+            .then(res => res.json())
+            .then(data => {
+                const usernameEl = document.getElementById('username');
+                if (usernameEl && data.name) {
+                    usernameEl.textContent = data.name;
+                }
+            })
+            .catch(err => console.error('Ошибка при получении имени пользователя', err));
 
         function logout() {
             window.location.href = '/logout';
         }
 
         // Инициализация
-        (async () => {
-            await loadUser();
-            // await loadAccounts();
-            // setTimeout(loadRates, 300);
-            // setInterval(loadRates, 60000);
-        })();
+        // (async () => {
+        //     await loadUser();
+        // })();
     </script>
 </body>
 

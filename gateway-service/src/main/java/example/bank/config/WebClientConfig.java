@@ -1,5 +1,6 @@
 package example.bank.config;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.oauth2.client.*;
@@ -52,5 +53,16 @@ public class WebClientConfig {
         @Bean
         public WebClient exchangeWebClient() {
                 return buildWebClient("http://localhost:8084", "gateway-client");
+        }
+
+        @Bean
+        @Qualifier("keycloakWebClient")
+        public WebClient keycloakWebClient() {
+                return WebClient.builder().build(); // можно настроить базовый URL, фильтры и т.д.
+        }
+
+        @Bean
+        public WebClient transferWebClient(WebClient.Builder builder) {
+                return builder.baseUrl("http://localhost:8086").build(); // transfer-service
         }
 }

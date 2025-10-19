@@ -23,7 +23,8 @@ public class SecurityConfig {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(exchanges -> exchanges
-                        .pathMatchers("/", "/css/**", "/js/**", "/images/**").permitAll()
+                        .pathMatchers("/", "/css/**", "/js/**", "/images/**", "/user/**", "register/**", "/bank/api/user", "/api/user").permitAll()
+                        .pathMatchers("/bank/**", "/cash/**", "/accounts/**").authenticated()
                         .anyExchange().authenticated())
                 // OAuth2 Login — Keycloak страница входа
                 .oauth2Login(Customizer.withDefaults())
