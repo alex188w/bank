@@ -7,13 +7,12 @@ import org.springframework.security.oauth2.client.registration.ReactiveClientReg
 import org.springframework.security.oauth2.client.web.reactive.function.client.*;
 import org.springframework.web.reactive.function.client.WebClient;
 
-
 @Configuration
 public class WebClientConfig {
 
     @Bean
     public WebClient cashWebClient(ReactiveClientRegistrationRepository clients,
-                                   ReactiveOAuth2AuthorizedClientService authService) {
+            ReactiveOAuth2AuthorizedClientService authService) {
 
         var manager = new AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager(clients, authService);
         var oauth2 = new ServerOAuth2AuthorizedClientExchangeFilterFunction(manager);
@@ -22,6 +21,14 @@ public class WebClientConfig {
         return WebClient.builder()
                 .baseUrl("http://localhost:8083") // cash-service
                 .filter(oauth2)
+                .build();
+    }
+
+    @Bean
+    public WebClient notificationWebClient() {
+        // без OAuth2, просто прямое соединение
+        return WebClient.builder()
+                .baseUrl("http://localhost:8087") // notification-service
                 .build();
     }
 }

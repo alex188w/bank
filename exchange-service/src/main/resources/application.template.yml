@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: exchange-service
+    
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8090/realms/bank
+
+  cloud:
+    consul:
+      host: localhost
+      port: 8500
+      discovery:
+        enabled: false
+        register: true
+        prefer-ip-address: true
+server:
+  port: 8084
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+exchange:
+  generator-url: http://localhost:8085/generate/rates

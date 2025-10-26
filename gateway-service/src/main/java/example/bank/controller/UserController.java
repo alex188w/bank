@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.result.view.RedirectView;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -21,10 +20,8 @@ import reactor.core.publisher.Mono;
 
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient;
-import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.oauth2.core.user.OAuth2User;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Controller;
 
 @Slf4j
@@ -106,15 +103,4 @@ public class UserController {
         return Map.of("name", username);
     }
 
-    // @PostMapping("/delete")
-    // public Mono<RedirectView> deleteUser(@AuthenticationPrincipal OidcUser
-    // oidcUser) {
-    // String username = oidcUser.getPreferredUsername();
-    // return userService.deleteUser(username)
-    // .thenReturn(new RedirectView("/logout"))
-    // .onErrorResume(e -> {
-    // log.warn("Ошибка при удалении пользователя: {}", e.getMessage());
-    // return Mono.just(new RedirectView("/user/profile?error=balance"));
-    // });
-    // }
 }

@@ -1,13 +1,7 @@
 spring:
   application:
     name: account-service
-  sleuth:
-    sampler:
-      probability: 1.0    # трассировать 100% запросов
-  zipkin:
-    base-url: http://localhost:9411
-    sender:
-      type: web
+
 
   security:
       oauth2:
@@ -20,7 +14,7 @@ spring:
             account-service-client:      # имя регистрации — можно любое понятное
               provider: keycloak
               client-id: account-service    # этот клиент должен быть создан в Keycloak  
-              client-secret: 5YPmTkSgyzfDwJHBnHHRPE9OIEVmYaYq
+              client-secret: client-secret"account-service"
               scope: openid, profile, email
               authorization-grant-type: client_credentials
           provider:
@@ -29,8 +23,8 @@ spring:
 
   r2dbc:
     url: r2dbc:postgresql://localhost:5432/bank?currentSchema=account
-    username: postgres
-    password: Fd18091971
+    username: yourName
+    password: yourPassword
 
   sql:
     init:

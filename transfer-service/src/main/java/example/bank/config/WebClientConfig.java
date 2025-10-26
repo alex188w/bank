@@ -13,7 +13,7 @@ public class WebClientConfig {
 
     @Bean
     public WebClient accountWebClient(ReactiveClientRegistrationRepository clients,
-                                      ReactiveOAuth2AuthorizedClientService authService) {
+            ReactiveOAuth2AuthorizedClientService authService) {
 
         var manager = new AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager(clients, authService);
         var oauth2 = new ServerOAuth2AuthorizedClientExchangeFilterFunction(manager);
@@ -22,6 +22,14 @@ public class WebClientConfig {
         return WebClient.builder()
                 .baseUrl("http://localhost:8082")
                 .filter(oauth2)
+                .build();
+    }
+
+    @Bean
+    public WebClient notificationWebClient() {
+        // без OAuth2, просто прямое соединение
+        return WebClient.builder()
+                .baseUrl("http://localhost:8087") // notification-service
                 .build();
     }
 }

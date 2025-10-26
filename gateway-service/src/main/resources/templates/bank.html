@@ -121,9 +121,9 @@
             </tr>
         </tbody>
 
-        <div th:if="${transferMessage}" style="color:red; font-weight:bold; margin-bottom:10px;">
+        <!-- <div th:if="${transferMessage}" style="color:red; font-weight:bold; margin-bottom:10px;">
             <p th:text="${transferMessage}"></p>
-        </div>
+        </div> -->
 
         <h3>Перевести между счетами</h3>
         <form action="/transfer" method="post">
@@ -157,10 +157,39 @@
             window.location.href = '/logout';
         }
 
-        // Инициализация
-        // (async () => {
-        //     await loadUser();
-        // })();
+        if (window.eventSource) {
+            window.eventSource.close();
+        }
+
+        window.eventSource = new EventSource("http://localhost:8087/notifications/stream");
+
+        eventSource.onopen = () => console.log("✅ Подключено к notifications-service");
+
+        eventSource.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+
+                // Игнорируем keep-alive
+                if (!data.type || data.type.toLowerCase() === "keep-alive") return;
+
+                console.log("Новое уведомление:", data);
+                if (data.type === "transfer") {
+                    alert(data.message);
+                } else if (data.type === "deposit") {
+                    alert(data.message);
+                } else if (data.type === "account_created") {
+                    alert(data.message);
+                } else {
+                    alert(`🔔 ${data.message}`);
+                }
+            } catch (e) {
+                console.log("Пульс сервера:", event.data);
+            }
+        };
+
+        eventSource.onerror = () => {
+            console.warn("⚠️ Соединение с notification-service потеряно. Переподключение...");
+        };
     </script>
 </body>
 

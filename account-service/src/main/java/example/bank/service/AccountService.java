@@ -10,27 +10,6 @@ import example.bank.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
-// @Service
-// @RequiredArgsConstructor
-// public class AccountService {
-
-//     private final WebClient cashWebClient;
-
-//     public Mono<Void> deposit(Long accountId, BigDecimal amount) {
-//         return cashWebClient.post()
-//                 .uri("/cash/deposit/{id}?amount={amount}", accountId, amount)
-//                 .retrieve()
-//                 .bodyToMono(Void.class);
-//     }
-
-//     public Mono<Void> withdraw(Long accountId, BigDecimal amount) {
-//         return cashWebClient.post()
-//                 .uri("/cash/withdraw/{id}?amount={amount}", accountId, amount)
-//                 .retrieve()
-//                 .bodyToMono(Void.class);
-//     }
-// }
-
 @Service
 @RequiredArgsConstructor
 public class AccountService {

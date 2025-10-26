@@ -79,17 +79,4 @@ public class UserService {
                             .doOnSuccess(u -> log.info("Профиль обновлён: {}", u));
                 });
     }
-
-    // Удаление пользователя (если нет денег на счетах)
-    // public Mono<Void> deleteUser(String username) {
-    // return accountRepository.findByUsername(username)
-    // .filter(account -> account.getBalance().compareTo(BigDecimal.ZERO) > 0)
-    // .hasElements()
-    // .flatMap(hasMoney -> {
-    // if (hasMoney) {
-    // return Mono.error(new IllegalStateException("На счетах есть деньги"));
-    // }
-    // return userRepository.deleteByUsername(username);
-    // });
-    // }
 }

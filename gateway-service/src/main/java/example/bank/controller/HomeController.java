@@ -8,15 +8,13 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import example.bank.model.User;
-import example.bank.service.UserService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 @Slf4j
 @Controller
 @RequiredArgsConstructor
 public class HomeController {
-
-    private final UserService userService;
+    
 
     @GetMapping({"/", "/user"})
     public String homePage(Model model, @AuthenticationPrincipal OidcUser oidcUser) {

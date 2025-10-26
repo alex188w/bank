@@ -2,7 +2,7 @@
 # stop-all.sh — останавливает все микросервисы
 
 # Файлы для хранения PID каждого сервиса
-SERVICES=("auth-service" "gateway-service" "account-service" "cash-service" "exchange-generator" "exchange-service")
+SERVICES=("gateway-service" "account-service" "cash-service" "exchange-generator" "exchange-service" "transfer-service" "notification-service")
 
 for SERVICE in "${SERVICES[@]}"; do
     PID_FILE="/tmp/${SERVICE}.pid"

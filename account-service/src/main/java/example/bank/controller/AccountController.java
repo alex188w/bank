@@ -10,6 +10,8 @@ import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.reactive.function.client.WebClient;
+
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import lombok.extern.slf4j.Slf4j;
@@ -22,8 +24,8 @@ public class AccountController {
 
     private final AccountRepository repository;
     private final AccountService service;
+    private final WebClient notificationWebClient;
 
-    // Возвращаем счета конкретного пользователя
     @GetMapping
     public Flux<Account> getAccounts(@RequestParam(required = false) String username) {
         if (username != null) {
@@ -31,7 +33,7 @@ public class AccountController {
             return repository.findByUsername(username);
         } else {
             log.info("Запрос всех счетов");
-            return Flux.empty(); // или можно выбросить ошибку
+            return Flux.empty(); 
         }
     }
 
@@ -46,8 +48,35 @@ public class AccountController {
             account.setBalance(BigDecimal.ZERO);
         if (account.getOwnerId() == null)
             account.setOwnerId(account.getUsername());
-        log.info("Аккаунт создан: {}", account);
-        return repository.save(account);
+
+        log.info("Создание аккаунта: {}", account);
+
+        return repository.save(account)
+                .flatMap(savedAccount -> sendNotification(savedAccount)
+                        .thenReturn(savedAccount));
+    }
+
+    private Mono<Void> sendNotification(Account account) {
+        String message = String.format("Создан счёт №%d\nВалюта: %s\nВладелец: %s",
+                account.getId(),
+                account.getCurrency() != null ? account.getCurrency() : "не указана",
+                account.getUsername());
+
+        Map<String, Object> notification = Map.of(
+                "accountId", account.getId(),
+                "type", "account_created",
+                "username", account.getUsername(),
+                "message", message,
+                "amount", account.getBalance());
+
+        return notificationWebClient.post()
+                .uri("/notifications")
+                .bodyValue(notification)
+                .retrieve()
+                .toBodilessEntity()
+                .then()
+                .doOnSuccess(v -> log.info("Отправлено уведомление о создании счёта: {}", notification))
+                .doOnError(e -> log.error("Ошибка при отправке уведомления: {}", e.getMessage()));
     }
 
     @PostMapping("/{id}/deposit")
