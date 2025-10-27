@@ -14,7 +14,7 @@ spring:
             account-service-client:      # имя регистрации — можно любое понятное
               provider: keycloak
               client-id: account-service    # этот клиент должен быть создан в Keycloak  
-              client-secret: client-secret"account-service"
+              client-secret: client-secret"account-service"  # ваш client-secret из Keycloak для account-service
               scope: openid, profile, email
               authorization-grant-type: client_credentials
           provider:
@@ -23,24 +23,26 @@ spring:
 
   r2dbc:
     url: r2dbc:postgresql://localhost:5432/bank?currentSchema=account
-    username: yourName
-    password: yourPassword
+    username: yourName   # ваш логин для postgresql
+    password: yourPassword  # ваш пароль для postgresql
 
-  sql:
-    init:
-      mode: never
+  # cloud:
+  #   consul:
+  #     host: localhost
+  #     port: 8500
+  #     enabled: true
+  #     discovery:
+  #       register: true
+  #       prefer-ip-address: true
 
-#   flyway:
-#     url: jdbc:postgresql://localhost:5432/bank
-#     user: postgres
-#     password: Fd18091971
-#     schemas: account
-#     locations: classpath:db/migration/account
+  # config:
+  #   import: "optional:consul:/account-service/data"
 
   cloud:
     consul:
-      host: localhost
-      port: 8500
+      enabled: false        # полностью отключаем Consul
+      config:
+        enabled: false
       discovery:
         enabled: false
 

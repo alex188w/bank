@@ -1,12 +1,6 @@
 spring:
   application:
     name: gateway-service
-  # zipkin:
-  #   base-url: http://localhost:9411
-  # micrometer:
-  #   tracing:
-  #     sampling:
-  #       probability: 1.0
   security:
     oauth2:
       client:
@@ -14,7 +8,7 @@ spring:
           gateway-user:                # registrationId (локальное имя)
             provider: keycloak
             client-id: gateway-service
-            client-secret: client-secret"gateway-service"
+            client-secret: client-secret"gateway-service"     # ваш client-secret из Keycloak для gateway-service
             authorization-grant-type: authorization_code
             redirect-uri: "http://localhost:8080/login/oauth2/code/gateway-service"
             scope:
@@ -41,12 +35,8 @@ spring:
 
   r2dbc:
     url: r2dbc:postgresql://localhost:5432/bank?currentSchema=users
-    username: yourName
-    password: yourPassword
-
-  # sql:
-  #   init:
-  #     mode: never
+    username: yourName   # ваш логин для postgresql
+    password: yourPassword  # ваш пароль для postgresql
   
   webflux:
     static-path-pattern: "/static/**"
@@ -94,6 +84,24 @@ spring:
             - Path=/api/authService/**
           filters:
             - StripPrefix=1
+    consul:
+      enabled: false        # полностью отключаем Consul
+      config:
+        enabled: false
+      discovery:
+        enabled: false
+
+  # cloud:
+  #   consul:
+  #     host: localhost
+  #     port: 8500
+  #     enabled: true
+  #     discovery:
+  #       register: true
+  #       prefer-ip-address: true
+
+  # config:
+  #   import: "optional:consul:/gateway-service/data"
 
 server:
   port: 8080
@@ -108,7 +116,7 @@ keycloak:
   server-url: http://localhost:8090
   realm: bank
   client-id: gateway-service
-  client-secret: client-secret"gateway-service"
+  client-secret: client-secret"gateway-service" # ваш client-secret из Keycloak для gateway-service
 
 logging:
   level:

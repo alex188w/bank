@@ -11,6 +11,26 @@ spring:
   main:
     allow-bean-definition-overriding: true
 
+  # cloud:
+  #   consul:
+  #     host: localhost
+  #     port: 8500
+  #     enabled: true
+  #     discovery:
+  #       register: true
+  #       prefer-ip-address: true
+
+  # config:
+  #   import: "optional:consul:/exchange-generator/data"
+
+  cloud:
+    consul:
+      enabled: false        # полностью отключаем Consul
+      config:
+        enabled: false
+      discovery:
+        enabled: false
+
 server:
   port: 8085
 

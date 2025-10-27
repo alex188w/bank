@@ -8,14 +8,26 @@ spring:
         jwt:
           issuer-uri: http://localhost:8090/realms/bank
 
+  # cloud:
+  #   consul:
+  #     host: localhost
+  #     port: 8500
+  #     enabled: true
+  #     discovery:
+  #       register: true
+  #       prefer-ip-address: true
+
+  # config:
+  #   import: "optional:consul:/exchange-service/data"
+
   cloud:
     consul:
-      host: localhost
-      port: 8500
+      enabled: false        # полностью отключаем Consul
+      config:
+        enabled: false
       discovery:
         enabled: false
-        register: true
-        prefer-ip-address: true
+
 server:
   port: 8084
 

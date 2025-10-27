@@ -1,25 +1,17 @@
 spring:
   application:
     name: transfer-service
-  # sleuth:
-  #   sampler:
-  #     probability: 1.0    # трассировать 100% запросов
-  # zipkin:
-  #   base-url: http://localhost:9411
-  #   sender:
-  #     type: web
   security:
       oauth2:
         resourceserver:
           jwt:
             issuer-uri: http://localhost:8090/realms/bank
-
         client:
           registration:
             transfer-service-client:      # имя регистрации — можно любое понятное
               provider: keycloak
               client-id: transfer-service    # этот клиент должен быть создан в Keycloak            
-              client-secret: client-secret"transfer-service"
+              client-secret: client-secret"transfer-service"      # ваш client-secret из Keycloak для transfer-service
               scope: openid, profile, email
               authorization-grant-type: client_credentials
           provider:
@@ -27,11 +19,23 @@ spring:
               token-uri: http://localhost:8090/realms/bank/protocol/openid-connect/token
   cloud:
     consul:
-      host: localhost
-      port: 8500
+      enabled: false        # полностью отключаем Consul
+      config:
+        enabled: false
       discovery:
         enabled: false
-        register: true
-        prefer-ip-address: true
+
+  # cloud:
+  #   consul:
+  #     host: localhost
+  #     port: 8500
+  #     enabled: true
+  #     discovery:
+  #       register: true
+  #       prefer-ip-address: true
+
+  # config:
+  #   import: "optional:consul:/transfer-service/data"
+    
 server:
   port: 8086
