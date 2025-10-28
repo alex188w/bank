@@ -142,7 +142,7 @@
                 import: "optional:consul:/transfer-service/data"
         
 
-Для работы с получением настройки из application.yml - оставляем файл как есть, блок импорта настроек из Consul - должен удален или закомментирован.
+Для работы с получением настройки микросервиса из application.yml - оставляем файл как есть, блок импорта настроек из Consul - должен удален или закомментирован.
 
 - Запустить локально на Виндовс: сервер авторизации OAuth 2.0 Keycloak.
 
@@ -188,7 +188,32 @@ mvn -pl notifications-service spring-boot:run
 Приложение открывается по адресу: http://localhost:8080/ - открывается страница регистрации, для зарегистрированного пользователя - ссылка на страницу авторизации Keycloak.
 
 
-- Для сборки и запуска приложения в контейнере: 
+- Сборка и запуск приложения в контейнерах: 
+
+Для запуска Микросервисов в Docker-контейнерах с открытым веб-портом, доступа из браузера и межсервисного взаимодействия (реализация паттерна Single Service per Host) в кадждом микросервисе создан Dockerfile.
+
+Для развёртывания и запуска всего мультипроекта с помощью Docker Compose создан файл docker-compose.yml. В существующей конфигурации - общие настройки берутся из Externalized/Distributed Config. Для этого, аналогично развертке приложения локкально, необходимо создать в панели управления Consul: http://localhost:8500/ui/dc1/kv - для каждого микросервиса конфиг и переместить туда всю конфигурацию файла application.yml. Отличия в конфигурации при рботе в контейнере (заменить для микросервисов, использующих данные настройки):
+
+    1. jwt:
+        issuer-uri: http://localhost:8090/realms/bank - заменить на:
+
+    jwt:
+        issuer-uri: http://keycloak:8080/realms/bank-realm
+
+
+    2. keycloak:
+            token-uri: http://localhost:8090/realms/bank/protocol/openid-connect/token - заменить на 
+
+        keycloak:
+              token-uri: http://host.docker.internal:8090/realms/bank/protocol/openid-connect/token
+
+    3. r2dbc:
+        url: r2dbc:postgresql://localhost:5432/bank?currentSchema=account - заменить на 
+
+    r2dbc:
+        url: r2dbc:postgresql://host.docker.internal:5432/bank?currentSchema=account
+
+Запуск всего приложения в контейнере командой: docker-compose up --build
 
 
 

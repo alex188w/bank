@@ -9,10 +9,10 @@ FROM eclipse-temurin:21-jre
 WORKDIR /app
 
 # Копируем только готовый JAR
-COPY --from=builder /app/target/account-service-*.jar app.jar
+COPY --from=builder /app/target/exchange-service-*.jar app.jar
 
 # Открываем порт, указанный в application.yml
-EXPOSE 8082
+EXPOSE 8084
 
 # Указываем стандартную команду запуска Spring Boot
 ENTRYPOINT ["java", "-jar", "app.jar"]
