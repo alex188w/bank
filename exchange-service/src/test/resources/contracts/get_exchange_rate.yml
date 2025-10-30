@@ -1,0 +1,16 @@
+description: |
+  Проверка получения курса валют
+request:
+  method: GET
+  urlPath: /exchange/rate
+  queryParameters:
+    from: USD
+    to: EUR
+response:
+  status: 200
+  headers:
+    Content-Type: application/json
+  body:
+    from: "USD"
+    to: "EUR"
+    rate: 0.92

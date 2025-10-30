@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 import java.math.BigDecimal;
 import java.util.Map;
 
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -19,14 +19,15 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/accounts")
+@RequestMapping(path = "/accounts", produces = MediaType.APPLICATION_JSON_VALUE)
 public class AccountController {
 
     private final AccountRepository repository;
     private final AccountService service;
     private final WebClient notificationWebClient;
 
-    @GetMapping
+    // @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+
     public Flux<Account> getAccounts(@RequestParam(required = false) String username) {
         if (username != null) {
             log.info("Запрос счетов пользователя: {}", username);

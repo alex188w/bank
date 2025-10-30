@@ -1,0 +1,12 @@
+description: |
+  Проверка получения остатка на счёте по ID
+request:
+  method: GET
+  urlPath: /cash/balance/1
+response:
+  status: 200
+  headers:
+    Content-Type: application/json
+  body:
+    accountId: 1
+    balance: 1000.50

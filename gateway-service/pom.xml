@@ -88,6 +88,44 @@
             <artifactId>reactor-test</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- Spring Cloud Contract -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-contract-stub-runner</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Stubs микросервисов -->
+        <dependency>
+            <groupId>example.bank</groupId>
+            <artifactId>account-service</artifactId>
+            <version>${project.version}</version>
+            <classifier>stubs</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>example.bank</groupId>
+            <artifactId>exchange-service</artifactId>
+            <version>${project.version}</version>
+            <classifier>stubs</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>example.bank</groupId>
+            <artifactId>cash-service</artifactId>
+            <version>${project.version}</version>
+            <classifier>stubs</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>example.bank</groupId>
+            <artifactId>transfer-service</artifactId>
+            <version>${project.version}</version>
+            <classifier>stubs</classifier>
+            <scope>test</scope>
+        </dependency>
+
                 <!-- Spring Security + OAuth2 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

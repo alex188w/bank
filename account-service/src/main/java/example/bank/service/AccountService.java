@@ -3,9 +3,6 @@ package example.bank.service;
 import java.math.BigDecimal;
 
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-
-import example.bank.model.Account;
 import example.bank.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;

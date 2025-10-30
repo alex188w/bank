@@ -1,6 +1,7 @@
 package example.bank.config;
 
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.oauth2.client.*;
@@ -19,6 +20,18 @@ public class WebClientConfig {
         private final ReactiveClientRegistrationRepository clients;
         private final ReactiveOAuth2AuthorizedClientService authService;
 
+        @Value("${clients.account.base-url:http://localhost:8082}")
+        private String accountBaseUrl;
+
+        @Value("${clients.exchange.base-url:http://localhost:8084}")
+        private String exchangeBaseUrl;
+
+        @Value("${clients.cash.base-url:http://localhost:8083}")
+        private String cashBaseUrl;
+
+        @Value("${clients.transfer.base-url:http://localhost:8086}")
+        private String transferBaseUrl;
+
         private WebClient buildWebClient(String baseUrl, String clientRegistrationId) {
                 var manager = new AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager(clients, authService);
                 var oauth2 = new ServerOAuth2AuthorizedClientExchangeFilterFunction(manager);
@@ -26,43 +39,33 @@ public class WebClientConfig {
 
                 return WebClient.builder()
                                 .baseUrl(baseUrl)
-                                .filter(oauth2) // OAuth2 фильтр
-                                // Трассировка Sleuth автоматически добавится, ручной filter не нужен
+                                .filter(oauth2)
                                 .build();
-        }
-
-        private ExchangeFilterFunction logRequest() {
-                return ExchangeFilterFunction.ofRequestProcessor(clientRequest -> {
-                        System.out.println("Request______________: " + clientRequest.url());
-                        clientRequest.headers().forEach(
-                                        (name, values) -> values.forEach(v -> System.out.println(name + ": " + v)));
-                        return Mono.just(clientRequest);
-                });
         }
 
         @Bean
         public WebClient accountWebClient() {
-                return buildWebClient("http://localhost:8082", "gateway-client");
+                return buildWebClient(accountBaseUrl, "gateway-client");
         }
 
         @Bean
         public WebClient cashWebClient() {
-                return buildWebClient("http://localhost:8083", "gateway-client");
+                return buildWebClient(cashBaseUrl, "gateway-client");
         }
 
         @Bean
         public WebClient exchangeWebClient() {
-                return buildWebClient("http://localhost:8084", "gateway-client");
+                return buildWebClient(exchangeBaseUrl, "gateway-client");
+        }
+
+        @Bean
+        public WebClient transferWebClient() {
+                return buildWebClient(transferBaseUrl, "gateway-client");
         }
 
         @Bean
         @Qualifier("keycloakWebClient")
         public WebClient keycloakWebClient() {
                 return WebClient.builder().build(); // можно настроить базовый URL, фильтры и т.д.
-        }
-
-        @Bean
-        public WebClient transferWebClient(WebClient.Builder builder) {
-                return builder.baseUrl("http://localhost:8086").build(); // transfer-service
         }
 }
