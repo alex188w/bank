@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "account-service.fullname" . }}
+  labels:
+    app: {{ include "account-service.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount | default 1 }}
+  selector:
+    matchLabels:
+      app: {{ include "account-service.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "account-service.name" . }}
+    spec:
+      containers:
+        - name: {{ include "account-service.name" . }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: {{ .Values.service.port }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "account-service.fullname" . }}-config
+            - secretRef:
+                name: {{ include "account-service.fullname" . }}-secret
+          volumeMounts:
+            - name: config
+              mountPath: /config
+
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "account-service.fullname" . }}-config

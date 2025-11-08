@@ -1,0 +1,34 @@
+accountService:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: account-service
+    tag: "latest"
+    imagePullPolicy: Never
+  service:
+    port: 8082
+  config:
+    spring:
+      r2dbc:
+        url: "r2dbc:postgresql://bank-platform-postgres:5432/bank?currentSchema=account"
+        username: postgres
+        password: secret_pass
+
+postgres:
+  enabled: true
+  replicaCount: 1
+  postgresUser: postgres
+  postgresPassword: secret_pass
+  postgresDatabase: bank
+  storage:
+    size: 1Gi
+
+notificationService:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: notification-service
+    tag: "latest"
+  service:
+    port: 8087
+    nodePort: 30087

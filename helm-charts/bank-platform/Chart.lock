@@ -1,0 +1,12 @@
+dependencies:
+- name: account-service
+  repository: file://../charts/account-service
+  version: 0.1.0
+- name: postgres
+  repository: file://../charts/postgres
+  version: 0.1.0
+- name: notification-service
+  repository: file://../charts/notification-service
+  version: 0.1.0
+digest: sha256:015c01c0414cac3de505fa74d938687d64c335ac74e70cc08a8b262d3132a06d
+generated: "2025-11-07T22:53:14.6773498+05:00"

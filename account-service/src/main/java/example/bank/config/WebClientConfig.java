@@ -10,25 +10,25 @@ import org.springframework.web.reactive.function.client.WebClient;
 @Configuration
 public class WebClientConfig {
 
-    @Bean
-    public WebClient cashWebClient(ReactiveClientRegistrationRepository clients,
-            ReactiveOAuth2AuthorizedClientService authService) {
+    // @Bean
+    // public WebClient cashWebClient(ReactiveClientRegistrationRepository clients,
+    //         ReactiveOAuth2AuthorizedClientService authService) {
 
-        var manager = new AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager(clients, authService);
-        var oauth2 = new ServerOAuth2AuthorizedClientExchangeFilterFunction(manager);
-        oauth2.setDefaultClientRegistrationId("account-service-client");
+    //     var manager = new AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager(clients, authService);
+    //     var oauth2 = new ServerOAuth2AuthorizedClientExchangeFilterFunction(manager);
+    //     oauth2.setDefaultClientRegistrationId("account-service-client");
 
-        return WebClient.builder()
-                .baseUrl("http://localhost:8083") // cash-service
-                .filter(oauth2)
-                .build();
-    }
+    //     return WebClient.builder()
+    //             .baseUrl("http://localhost:8083") // cash-service
+    //             .filter(oauth2)
+    //             .build();
+    // }
 
     @Bean
     public WebClient notificationWebClient() {
         // без OAuth2, просто прямое соединение
         return WebClient.builder()
-                .baseUrl("http://localhost:8087") // notification-service
+                .baseUrl("http://bank-platform-notification-service:8087") // notification-service
                 .build();
     }
 }

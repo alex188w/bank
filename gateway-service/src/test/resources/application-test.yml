@@ -1,8 +1,0 @@
-spring:
-  main:
-    allow-bean-definition-overriding: true
-
-# Полностью отключаем Spring Security для тестов
-
-  security:
-    enabled: false

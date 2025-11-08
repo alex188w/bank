@@ -1,0 +1,9 @@
+enabled: true
+image:
+  repository: postgres
+  tag: "15-alpine"
+postgresUser: postgres
+postgresPassword: secret_pass
+postgresDatabase: bank
+storage:
+  size: 1Gi

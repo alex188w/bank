@@ -26,21 +26,25 @@ public class AccountController {
     private final AccountService service;
     private final WebClient notificationWebClient;
 
-    // @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-
+    @GetMapping
     public Flux<Account> getAccounts(@RequestParam(required = false) String username) {
         if (username != null) {
-            log.info("Запрос счетов пользователя: {}", username);
+            log.info("Запрос счетов пользователя1: {}", username);
             return repository.findByUsername(username);
         } else {
-            log.info("Запрос всех счетов");
-            return Flux.empty(); 
+            log.info("Запрос всех счетов2");
+            return Flux.empty();
         }
     }
 
     @GetMapping("/{id}")
     public Mono<Account> getById(@PathVariable Long id) {
         return repository.findById(id);
+    }
+
+    @GetMapping("/test")
+    public String test() {
+        return "account-work";
     }
 
     @PostMapping("/create")
@@ -50,12 +54,25 @@ public class AccountController {
         if (account.getOwnerId() == null)
             account.setOwnerId(account.getUsername());
 
-        log.info("Создание аккаунта: {}", account);
+        log.info("Создание аккаунта2: {}", account);
 
         return repository.save(account)
                 .flatMap(savedAccount -> sendNotification(savedAccount)
                         .thenReturn(savedAccount));
     }
+
+    // @PostMapping("/create")
+    // public Mono<Account> createAccount(@RequestBody Account account) {
+    // if (account.getBalance() == null)
+    // account.setBalance(BigDecimal.ZERO);
+    // if (account.getOwnerId() == null)
+    // account.setOwnerId(account.getUsername());
+
+    // log.info("Создание аккаунта: {}", account);
+
+    // return repository.save(account)
+    // .doOnSuccess(savedAccount -> log.info("Сохранён аккаунт: {}", savedAccount));
+    // }
 
     private Mono<Void> sendNotification(Account account) {
         String message = String.format("Создан счёт №%d\nВалюта: %s\nВладелец: %s",
@@ -76,8 +93,9 @@ public class AccountController {
                 .retrieve()
                 .toBodilessEntity()
                 .then()
-                .doOnSuccess(v -> log.info("Отправлено уведомление о создании счёта: {}", notification))
-                .doOnError(e -> log.error("Ошибка при отправке уведомления: {}", e.getMessage()));
+                .doOnSuccess(v -> log.info("Отправлено уведомление о создании счёта2: {}", notification))
+                .doOnError(e -> log.error("Ошибка при отправке уведомления2: {}", e.getMessage()))
+                .onErrorResume(e -> Mono.empty()); // ← не падаем при ошибке соединения
     }
 
     @PostMapping("/{id}/deposit")

@@ -16,17 +16,18 @@ import org.springframework.web.reactive.result.view.RedirectView;
 import org.springframework.web.reactive.result.view.Rendering;
 
 import example.bank.model.TransferRequest;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
-import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Controller
-@RequiredArgsConstructor
 @RequestMapping
 public class FrontController {
 
@@ -34,6 +35,19 @@ public class FrontController {
         private final WebClient exchangeWebClient;
         private final WebClient cashWebClient;
         private final WebClient transferWebClient;
+
+        @Autowired
+        public FrontController(
+                        @Qualifier("accountWebClient") WebClient accountWebClient,
+                        @Qualifier("exchangeWebClient") WebClient exchangeWebClient,
+                        @Qualifier("cashWebClient") WebClient cashWebClient,
+                        @Qualifier("transferWebClient") WebClient transferWebClient) {
+
+                this.accountWebClient = accountWebClient;
+                this.exchangeWebClient = exchangeWebClient;
+                this.cashWebClient = cashWebClient;
+                this.transferWebClient = transferWebClient;
+        }
 
         // Главная страница — реактивно подгружаем свои счета и курсы
         @GetMapping("/bank")

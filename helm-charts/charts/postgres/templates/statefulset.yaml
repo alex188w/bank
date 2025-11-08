@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "postgres.fullname" . | default (printf "%s-postgres" .Release.Name) }}
+spec:
+  serviceName: {{ include "postgres.fullname" . | default (printf "%s-postgres" .Release.Name) }}
+  replicas: {{ .Values.replicaCount | default 1 }}
+  selector:
+    matchLabels:
+      app: {{ include "postgres.fullname" . | default (printf "%s-postgres" .Release.Name) }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "postgres.fullname" . | default (printf "%s-postgres" .Release.Name) }}
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: "{{ .Values.postgresDatabase }}"
+            - name: POSTGRES_USER
+              value: "{{ .Values.postgresUser }}"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_PASSWORD
+          volumeMounts:
+            - name: pgdata
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: pgdata
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: {{ .Values.storage.size | default "1Gi" }}

@@ -17,9 +17,10 @@ public class SecurityConfig {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(exchanges -> exchanges
-                        .pathMatchers("/actuator/**", "/accounts/**").permitAll()
+                        .pathMatchers("/actuator/**").permitAll()
                         // .pathMatchers("/accounts/**").hasRole("SERVICE")
-                        .anyExchange().authenticated()
+                        // .anyExchange().authenticated()
+                        .anyExchange().permitAll()
                 )
                 // Новый способ: через явно указанный jwtDecoder()
                 .oauth2ResourceServer(oauth2 -> 
@@ -35,4 +36,5 @@ public class SecurityConfig {
                 "http://localhost:8090/realms/bank/protocol/openid-connect/certs"
         ).build();
     }
+    
 }

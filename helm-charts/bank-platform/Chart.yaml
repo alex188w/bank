@@ -1,0 +1,26 @@
+apiVersion: v2
+name: bank-platform
+description: Umbrella chart for bank microservices (minimal)
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+dependencies:
+  - name: notification-service
+    version: 0.1.0
+    repository: "file://../charts/notification-service"
+    condition: notificationService.enabled
+  - name: postgres
+    # version: "14.2.3" # Using a specific known stable version from Bitnami history
+    # repository: "https://charts.bitnami.com/bitnami"
+    version: 0.1.0
+    repository: "file://../charts/postgres"
+    condition: postgres.enabled
+  - name: account-service
+    version: 0.1.0
+    repository: "file://../charts/account-service"
+    condition: accountService.enabled
+  - name: cash-service
+    version: 0.1.0
+    repository: "file://../charts/cash-service"
+    condition: cashService.enabled
+
