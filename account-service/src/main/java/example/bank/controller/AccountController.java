@@ -39,6 +39,7 @@ public class AccountController {
 
     @GetMapping("/{id}")
     public Mono<Account> getById(@PathVariable Long id) {
+        log.info("Запрос счета для пользователя id = {}", id);
         return repository.findById(id);
     }
 

@@ -33,7 +33,7 @@ public class SecurityConfig {
     @Bean
     public ReactiveJwtDecoder jwtDecoder() {
         return NimbusReactiveJwtDecoder.withJwkSetUri(
-                "http://localhost:8090/realms/bank/protocol/openid-connect/certs"
+                "http://192.168.0.140:8090/realms/bank/protocol/openid-connect/certs"
         ).build();
     }
     

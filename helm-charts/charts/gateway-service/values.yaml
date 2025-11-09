@@ -1,0 +1,38 @@
+enabled: true
+replicaCount: 1
+image:
+  repository: gateway-service
+  tag: "latest"
+  imagePullPolicy: Never
+service:
+  port: 8080
+
+config:
+  spring:
+    r2dbc:
+      url: "r2dbc:postgresql://bank-platform-postgres:5432/bank?currentSchema=users"
+      username: postgres
+      password: secret_pass
+
+# --- Добавлено для External Secrets ---
+secretStore:
+  create: false               # если true — Helm создаст SecretStore
+  name: bank-secret-store    # имя SecretStore (используется и в ExternalSecret)
+  kind: SecretStore          # тип — локальный Kubernetes SecretStore
+
+externalSecrets:
+  enabled: true
+  refreshInterval: 1h
+  data:
+    - secretKey: SPRING_R2DBC_PASSWORD
+      remoteRef:
+        key: postgres-secret
+        property: SPRING_R2DBC_PASSWORD
+    - secretKey: OAUTH_CLIENT_SECRET
+      remoteRef:
+        key: oauth-secret
+        property: OAUTH_CLIENT_SECRET
+
+# secretStore:
+#   create: true
+#   name: local-secret-store

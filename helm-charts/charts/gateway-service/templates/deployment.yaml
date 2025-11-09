@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "gateway-service.fullname" . }}
+  labels:
+    app: {{ include "gateway-service.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount | default 1 }}
+  selector:
+    matchLabels:
+      app: {{ include "gateway-service.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "gateway-service.name" . }}
+    spec:
+      containers:
+        - name: {{ include "gateway-service.name" . }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: {{ .Values.service.port }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "gateway-service.fullname" . }}-config
+            - secretRef:
+                name: {{ include "gateway-service.fullname" . }}-secret
+          volumeMounts:
+            - name: config
+              mountPath: /config
+
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "gateway-service.fullname" . }}-config

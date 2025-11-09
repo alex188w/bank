@@ -3,7 +3,7 @@ FROM maven:3.9.9-eclipse-temurin-21 AS builder
 WORKDIR /app
 
 # Подключаем зеркало для стабильных загрузок
-COPY account-service/settings.xml /root/.m2/settings.xml
+COPY /settings.xml /root/.m2/settings.xml
 
 # Копируем кастомный pom и исходники
 COPY account-service/pom-docker.xml ./pom.xml

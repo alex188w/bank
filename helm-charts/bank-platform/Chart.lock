@@ -1,12 +1,21 @@
 dependencies:
-- name: account-service
-  repository: file://../charts/account-service
+- name: notification-service
+  repository: file://../charts/notification-service
   version: 0.1.0
 - name: postgres
   repository: file://../charts/postgres
   version: 0.1.0
-- name: notification-service
-  repository: file://../charts/notification-service
+- name: account-service
+  repository: file://../charts/account-service
   version: 0.1.0
-digest: sha256:015c01c0414cac3de505fa74d938687d64c335ac74e70cc08a8b262d3132a06d
-generated: "2025-11-07T22:53:14.6773498+05:00"
+- name: cash-service
+  repository: file://../charts/cash-service
+  version: 0.1.0
+- name: gateway-service
+  repository: file://../charts/gateway-service
+  version: 0.1.0
+- name: exchange-service
+  repository: file://../charts/exchange-service
+  version: 0.1.0
+digest: sha256:3bea39a81ab352fc39a660a26136808db7d36e75c19c0d5df961ed447637f5ac
+generated: "2025-11-09T12:08:03.1378324+05:00"

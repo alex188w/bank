@@ -20,16 +20,16 @@ public class WebClientConfig {
         private final ReactiveClientRegistrationRepository clients;
         private final ReactiveOAuth2AuthorizedClientService authService;
 
-        @Value("${clients.account.base-url:http://localhost:8082}")
+        @Value("${clients.account.base-url:http://bank-platform-account-service:8082}")
         private String accountBaseUrl;
 
-        @Value("${clients.exchange.base-url:http://localhost:8084}")
+        @Value("${clients.exchange.base-url:http://bank-platform-exchange-service:8084}")
         private String exchangeBaseUrl;
 
-        @Value("${clients.cash.base-url:http://localhost:8083}")
+        @Value("${clients.cash.base-url:http://bank-platform-cash-service:8083}")
         private String cashBaseUrl;
 
-        @Value("${clients.transfer.base-url:http://localhost:8086}")
+        @Value("${clients.transfer.base-url:http://bank-platform-transfer-service:8086}")
         private String transferBaseUrl;
 
         private WebClient buildWebClient(String baseUrl, String clientRegistrationId) {

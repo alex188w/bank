@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "exchange-service.fullname" . }}
+  labels:
+    app: {{ include "exchange-service.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount | default 1 }}
+  selector:
+    matchLabels:
+      app: {{ include "exchange-service.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "exchange-service.name" . }}
+    spec:
+      containers:
+        - name: {{ include "exchange-service.name" . }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: {{ .Values.service.port }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "exchange-service.fullname" . }}-config
+          volumeMounts:
+            - name: config
+              mountPath: /config
+
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "exchange-service.fullname" . }}-config

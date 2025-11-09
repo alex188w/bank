@@ -16,14 +16,16 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 @EnableWebFluxSecurity
 public class SecurityConfig {
 
-    private static final String ISSUER_URI = "http://localhost:8090/realms/bank";
+    private static final String ISSUER_URI = "http://192.168.0.140:8090/realms/bank";
 
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(exchanges -> exchanges
-                        .pathMatchers("/", "/css/**", "/js/**", "/images/**", "/user/**", "register/**", "/bank/api/user", "/api/user").permitAll()
+                        .pathMatchers("/", "/css/**", "/js/**", "/images/**", "/user/**", "register/**",
+                                "/bank/api/user", "/api/user")
+                        .permitAll()
                         .pathMatchers("/bank/**", "/cash/**", "/accounts/**").authenticated()
                         .anyExchange().authenticated())
                 // OAuth2 Login — Keycloak страница входа
@@ -37,7 +39,7 @@ public class SecurityConfig {
                         .logoutUrl("/logout")
                         .logoutSuccessHandler((exchange, authentication) -> {
                             URI logoutUri = URI.create(
-                                    "http://localhost:8090/realms/bank/protocol/openid-connect/logout?redirect_uri=http://localhost:8080/");
+                                    "http://192.168.0.140:8090/realms/bank/protocol/openid-connect/logout?redirect_uri=http://localhost:8080/");
                             exchange.getExchange().getResponse().setStatusCode(HttpStatus.SEE_OTHER);
                             exchange.getExchange().getResponse().getHeaders().setLocation(logoutUri);
                             return exchange.getExchange().getResponse().setComplete();

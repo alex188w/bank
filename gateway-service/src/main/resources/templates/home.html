@@ -1,30 +1,105 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html xmlns:th="http://www.thymeleaf.org">
 
 <head>
     <meta charset="UTF-8">
-    <html xmlns:th="http://www.thymeleaf.org">
+    <title>Авторизация</title>
+    <style>
+        body {
+            background-color: #007bff;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
 
-    <head>
-        <title>Главная</title>
-    </head>
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 35px;
+            background-color: #ffffff;
+            padding: 30px 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            width: 380px;
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        form label {
+            display: block;
+            margin-bottom: 10px;
+            text-align: left;
+            color: #555;
+        }
+
+        form input {
+            width: 100%;
+            padding: 8px 10px;
+            margin-top: 5px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .message {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        .error {
+            color: red;
+        }
+
+        .toggle-link {
+            margin-top: 15px;
+            display: block;
+            color: #007bff;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+    </style>
+</head>
 
 <body>
-    <h2>Добро пожаловать!</h2>
+    <div class="container">
+        <h1 id="formTitle">Вход</h1>
+        <h2 style="padding-bottom: 20px;">Приложение "Банк"</h2>
 
-    <div>
-        <h3>Войти через Keycloak</h3>
-        <a th:href="@{/oauth2/authorization/gateway-user}">
-            <button>Войти</button>
-        </a>
+        <div>
+            <a th:href="@{/oauth2/authorization/gateway-user}">
+                <button>Войти</button>
+            </a>
+
+        </div>
+        <div>
+            <a th:href="@{/user/register}">
+                <button>Нет аккаунта? Зарегистрироваться</button>
+            </a>
+            <p class="message error" th:if="${error}">Неверный логин или пароль</p>
+        </div>
     </div>
 
-    <div>
-        <h3>Регистрация нового пользователя</h3>
-        <a th:href="@{/user/register}">
-            <button>Зарегистрироваться</button>
-        </a>
-    </div>
-</body>
 
-</html>

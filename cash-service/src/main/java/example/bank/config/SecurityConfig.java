@@ -19,18 +19,19 @@ public class SecurityConfig {
                 .authorizeExchange(exchanges -> exchanges
                         .pathMatchers("/actuator/**").permitAll()
                         // .pathMatchers("/cash/deposit/**").hasAuthority("SERVICE_ACCESS")
-                        .anyExchange().authenticated()
+                        // .anyExchange().authenticated()
+                        .anyExchange().permitAll()
                 )
-                .oauth2ResourceServer(oauth2 -> 
-                        oauth2.jwt(jwt -> jwt.jwtDecoder(jwtDecoder()))
-                )
+                // .oauth2ResourceServer(oauth2 -> 
+                //         oauth2.jwt(jwt -> jwt.jwtDecoder(jwtDecoder()))
+                // )
                 .build();
     }
 
     @Bean
     public ReactiveJwtDecoder jwtDecoder() {
         return NimbusReactiveJwtDecoder.withJwkSetUri(
-                "http://localhost:8090/realms/bank/protocol/openid-connect/certs"
+                "http://bank-platform-keykloak-service:8090/realms/bank/protocol/openid-connect/certs"
         ).build();
     }
 }

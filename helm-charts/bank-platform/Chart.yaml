@@ -24,3 +24,14 @@ dependencies:
     repository: "file://../charts/cash-service"
     condition: cashService.enabled
 
+  - name: gateway-service
+    version: 0.1.0
+    repository: "file://../charts/gateway-service"
+    condition: gatewayService.enabled
+
+  - name: exchange-service
+    version: 0.1.0
+    repository: "file://../charts/exchange-service"
+    condition: exchangeService.enabled
+
+
