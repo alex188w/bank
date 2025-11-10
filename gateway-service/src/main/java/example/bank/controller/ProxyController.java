@@ -17,8 +17,11 @@ import org.springframework.http.MediaType;
 import java.math.BigDecimal;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RestController
 @RequestMapping(value = "/api", produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
@@ -27,6 +30,7 @@ public class ProxyController {
         private final WebClient accountWebClient;
         private final WebClient cashWebClient;
         private final WebClient exchangeWebClient;
+        private final WebClient notificationWebClient;
 
         // Проксируем accounts
         @GetMapping("/accounts")
@@ -103,6 +107,31 @@ public class ProxyController {
                 if (username == null)
                         username = user.getName();
                 return Map.of("name", username);
+        }
+
+        // @GetMapping("/notifications/stream")
+        // public Flux<String> proxyStream() {
+        // log.info("========= Загружаем notifications =========");
+        // return notificationWebClient.get()
+        // .uri("/notifications/stream")
+        // .accept(MediaType.TEXT_EVENT_STREAM)
+        // .retrieve()
+        // .bodyToFlux(String.class);
+        // }
+
+        @GetMapping(value = "/notifications/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+        public Flux<String> proxyStream() {
+                log.info("========= Загружаем notifications =========");
+
+                WebClient webClient = WebClient.builder()
+                                .baseUrl("http://bank-platform-notification-service:8087")
+                                .build();
+
+                return webClient.get()
+                                .uri("/notifications/stream")
+                                .accept(MediaType.TEXT_EVENT_STREAM)
+                                .retrieve()
+                                .bodyToFlux(String.class);
         }
 
         @GetMapping("/debug-token")

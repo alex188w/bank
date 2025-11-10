@@ -12,7 +12,7 @@ public class WebClientConfig {
     public WebClient notificationWebClient() {
         // без OAuth2, просто прямое соединение
         return WebClient.builder()
-                .baseUrl("http://localhost:8087") // notification-service
+                .baseUrl("http://bank-platform-notification-service:8087") // notification-service
                 .build();
     }
 }

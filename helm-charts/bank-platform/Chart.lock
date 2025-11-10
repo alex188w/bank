@@ -17,5 +17,11 @@ dependencies:
 - name: exchange-service
   repository: file://../charts/exchange-service
   version: 0.1.0
-digest: sha256:3bea39a81ab352fc39a660a26136808db7d36e75c19c0d5df961ed447637f5ac
-generated: "2025-11-09T12:08:03.1378324+05:00"
+- name: exchange-generator
+  repository: file://../charts/exchange-generator
+  version: 0.1.0
+- name: transfer-service
+  repository: file://../charts/transfer-service
+  version: 0.1.0
+digest: sha256:67e1e476ddbcaa454ef009bdb1c03183d8126c6f99d48219fc82b14e67ff0af8
+generated: "2025-11-09T19:01:35.320633+05:00"

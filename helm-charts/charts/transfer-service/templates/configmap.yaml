@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "transfer-service.fullname" . }}-config
+data:
+  application-k8s.yml: |
+    spring:
+      application:
+        name: transfer-service
+
+    server:
+      port: 8086
+
+    management:
+      health:
+        db:
+          enabled: false
+        r2dbc:
+          enabled: false

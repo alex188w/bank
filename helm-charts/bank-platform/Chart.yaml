@@ -34,4 +34,14 @@ dependencies:
     repository: "file://../charts/exchange-service"
     condition: exchangeService.enabled
 
+  - name: exchange-generator
+    version: 0.1.0
+    repository: "file://../charts/exchange-generator"
+    condition: exchangeGenerator.enabled
+
+  - name: transfer-service
+    version: 0.1.0
+    repository: "file://../charts/transfer-service"
+    condition: transferService.enabled
+
 

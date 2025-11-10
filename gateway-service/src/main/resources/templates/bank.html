@@ -161,7 +161,7 @@
             window.eventSource.close();
         }
 
-        window.eventSource = new EventSource("http://localhost:8087/notifications/stream");
+        window.eventSource = new EventSource("/api/notifications/stream");
 
         eventSource.onopen = () => console.log("✅ Подключено к notifications-service");
 

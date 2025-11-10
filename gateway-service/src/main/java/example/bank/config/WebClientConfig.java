@@ -32,6 +32,9 @@ public class WebClientConfig {
         @Value("${clients.transfer.base-url:http://bank-platform-transfer-service:8086}")
         private String transferBaseUrl;
 
+        @Value("${clients.notification.base-url:http://bank-platform-notification-service:8087}")
+        private String notificationBaseUrl;
+
         private WebClient buildWebClient(String baseUrl, String clientRegistrationId) {
                 var manager = new AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager(clients, authService);
                 var oauth2 = new ServerOAuth2AuthorizedClientExchangeFilterFunction(manager);
@@ -62,6 +65,13 @@ public class WebClientConfig {
         @Bean
         public WebClient transferWebClient() {
                 return buildWebClient(transferBaseUrl, "gateway-client");
+        }
+
+        @Bean
+        public WebClient notificationWebClient() {
+                return WebClient.builder()
+                                .baseUrl("http://bank-platform-notification-service:8087")
+                                .build();
         }
 
         @Bean

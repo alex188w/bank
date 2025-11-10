@@ -36,7 +36,7 @@ public class TransferService {
 
     private Mono<Map<String, Object>> getAccount(Long id) {
         return webClient.get()
-                .uri("http://localhost:8082/accounts/{id}", id)
+                .uri("http://bank-platform-account-service:8082/accounts/{id}", id)
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {
                 })
@@ -45,14 +45,14 @@ public class TransferService {
 
     private Mono<Void> withdraw(Long id, BigDecimal amount) {
         return webClient.post()
-                .uri("http://localhost:8082/accounts/{id}/withdraw?amount={amount}", id, amount)
+                .uri("http://bank-platform-account-service:8082/accounts/{id}/withdraw?amount={amount}", id, amount)
                 .retrieve()
                 .bodyToMono(Void.class);
     }
 
     private Mono<Void> deposit(Long id, BigDecimal amount) {
         return webClient.post()
-                .uri("http://localhost:8082/accounts/{id}/deposit?amount={amount}", id, amount)
+                .uri("http://bank-platform-account-service:8082/accounts/{id}/deposit?amount={amount}", id, amount)
                 .retrieve()
                 .bodyToMono(Void.class);
     }
