@@ -19,236 +19,188 @@
 
 ## Функциональность
 
-* Микросервисы приложения написаны на Spring Boot и собираются с помощью Maven.
+* Развёртывание микросервисов осуществляется локально в Kubernetes (в качестве реализации используеться Minikube).
+* В качестве пакетного менеджера и шаблонизатора для развёртывания микросервисов используется Helm.
+* Базы данных развёрнуты в Kubernetes с использованием StatefulSets.
+Микросервисы развёрнуты в Kubernetes с использованием Deployments (количество реплик - по одной на микросервис).
+* Для реализации Service Discovery в Kubernetes созданы Service для каждого микросервиса (разрешение имён на уровне DNS).
+* Для реализации Gateway API в Kubernetes используется Gateway API (микросервисы выполняют запросы в другие микросервисы через этот Gateway API).
+* В качестве Externalized/Distributed Config в Kubernetes созданы ConfigMaps и Secrets.
+* Helm-чарты для микросервисов оформлены в виде сабчартов, объединённых под один общий зонтичный Helm-чарт, и хранятся в Git (можно развёртывать как каждый микросервис отдельно с использованием его сабчарта, так и все микросервисы сразу с использованием зонтичного чарта).
+* OAuth 2.0 сервер авторизации развёрнут в Kubernetes с использованием Helm.
+Предусмотрено развёртывание микросервисов в различных средах (разработка, тестинг, продакшен) с использованием пространств имён (namespaces) в Kubernetes (например, dev, test, prod).
+* Для тестирования Helm-чартов реализованы тесты с использованием возможностей тестирования Helm-чартов.
+* В качестве системы непрерывной интеграции и доставки микросервисов используется CI/CD Jenkins.
+* Для каждого микросервиса и всего зонтичного проекта реализованы пайплайны для валидации, сборки, тестирования, развёртывания в тестовой и продакшен-средах Kubernetes с использованием Helm-чартов (Jenkinsfile).
+* Jenkinsfile хранятся в Git, есть возможность их применения в CI/CD Jenkins.
 
-* Код приложения хранится в Git-репозитории (Github) по адресу: https://github.com/alex188w/bank.
+## Псоледовательность работы над приложением
 
-* Есть возможность собирать сразу все микросервисы одной командой с помощью parent POM и использования мультимодульных проектов.
+1. Подготовка окружения
 
-* Код приложения написан на Java 21.
+Установить Docker (для контейнеризации сервисов).
 
-* Web UI приложения использует Spring WebFlux.
+Установить kubectl (для управления кластерами Kubernetes).
 
-* Приложение используеть Spring Data R2DBC для доступа к данным в базе данных.
+Установить Minikube (локальный Kubernetes-кластер).
 
-* База данных для микросервисов приложения - персистентная (PostgreSQL). БД - одна, но разграничивает микросервисы на уровне схем, чтобы реализовать паттерн Database per Service.
+Установить Helm (для управления чартарами микросервисов).
 
-* В качестве Service Discovery и Gateway API применен Consul, реализующий паттерны Service Discovery и Gateway API, с использованием проекта Spring Cloud Gateway.
+2. Контейнеризация сервисов
 
-* Микросервисы выполняют запросы в другие микросервисы через Gateway API и регистрируются в Service Discovery.
+Создать Dockerfile для каждого микросервиса.
 
-* В качестве Externalized/Distributed Config применен Consul, реализующий паттерн Externalized/Distributed Config, с использованием проекта Spring Cloud Config.
+Собрать и протестировать образы локально (docker build, docker run).
 
-* Микросервисы получают общие настройки из Externalized/Distributed Config.
+3. Helm-чарты
 
-* В качестве сервера авторизации OAuth 2.0 используется сервер авторизации OAuth 2.0 Keycloak, с использованием проекта Spring Security OAuth.
+Создать Helm-чарт для каждого сервиса: deployment.yaml, service.yaml, configmap.yaml, secret.yaml.
 
-* Микросервисы авторизуются на сервере OAuth 2.0 Keycloak, получают Access Token (JWT) по client credentials для выполнения запросов в другие микросервисы.
+Настроить values.yaml для параметров (replicas, порты, переменные окружения, секреты).
 
-* Микросервисы приложения можно собрать из исходников и запустить локально.
-Микросервисы приложения могут быть упакованы в Executable JAR и запускаться в Netty.
+4. Секреты и конфиги
 
-* Приложение покрыто тестами (юнит, интеграционными, контрактными) с использованием JUnit 5, TestContext Framework, Spring Boot Test, кеширования контекстов и Spring Cloud Contract.
+Создать Secrets для логинов/паролей к БД и OAuth.
 
-* Микросервисы написаны и протестированы с использованием паттернов микросервисной архитектуры приложения.
+Создать ConfigMap для настроек приложений.
 
-* Executable JAR микросервисов могут быть упакованы в Docker-контейнеры с открытым веб-портом для доступа из браузера и межсервисного взаимодействия, чтобы реализовать паттерн Single Service per Host.
+Настроить envFrom и env в Deployment, чтобы сервисы использовали Secrets и ConfigMap.
 
-* Запускать микросервисы можно все вместе с помощью Docker Compose или по одному вручную с помощью команд Docker.
+5. Развёртывание локально
 
-## Краткое описание работы приложения
+Запустить Helm для всех микросервисов:
 
-1. Фронт (gateway-service)
-Фронт — это веб-приложение с клиентским HTML-интерфейсом. Предоставляет следующие HTML-страницы:
+helm upgrade --install <release-name> ./helm-charts -f values.yaml
 
-    1.1. Cтраницу регистрации, если пользватель зарегистрирован, предусмотрена кнопка "Войти", после нажатия на которую пользователь перенаправляется на сервер авторизации OAuth 2.0 Keycloak. При регистрации данные пользователя сохраняются в БД приложеня и автоматически создается пользователь в KeyKloak с возможностью полноценной работы в приложении. После регистрации пользователь автоматически перенапрвляется на страницу авторизации KeyKloak, после авторизации - на главную страницу приложения - http://localhost:8080/bank. Здесь же есть ссылка, при нажатии на которую, пользователь разлогинивается.
 
-    1.2. Главная страница приложения - доступна только после успешной аутентификации/авторизации пользователя. 
+Проверить статус Pod’ов:
 
-    Страница содержит:
+kubectl get pods
+kubectl logs <pod-name>
 
-    блок внесения и снятия виртуальных денег;
+6. Тестирование
 
-    блок перевода денег на счёт другого аккаунта;
+Создать Helm-тесты (templates/tests/test-connection.yaml) для проверки доступности сервисов.
 
-    блок конвертации валют.
+Запустить тесты:
 
-2. Сервис аккаунтов (accounts-service)
-
-Сервис аккаунтов хранит информацию о зарегистрированных аккаунтах и их счетах (именно в нём хранятся логин, счета пользователя и и наличие на них денег, которые становятся достцпными после аутентификации пользователя на сервере авторизации OAuth 2.0 Keycloak).
-
-Фронт выполняет REST-запросы (в формате JSON) из блока внесения и снятия виртуальных денег и блока перевода денег на счёт другого аккаунта в accounts-service.
-
-В свою очередь, accounts-service выполняет REST-запросы (в формате JSON) в Notifications.
-                        
-Также в accounts-service приходят запросы при регистрации нового аккаунта (из формы регистрации).
-
-3. Сервис обналичивания денег (cash-service)
-
-Сервис обналичивания денег осуществляет пополнение счёта или снятие денег со счёта.
-
-Фронт выполняет REST-запросы (в формате JSON) из блока внесения и снятия виртуальных денег в сервис Cash.
-
-В свою очередь, Cash выполняет REST-запросы (в формате JSON) в accounts-service и Notifications.
-
-4. Сервис перевода денег между счетами (transfer-service)
-
-Сервис перевода денег между счетами осуществляет перевод денег между счетами разных пользователей.
-
-Фронт выполняет REST-запросы (в формате JSON) из блока перевода денег на счёт другого аккаунта в сервис transfer-service. 
-
-В свою очередь, transfer-service выполняет REST-запросы (в формате JSON) в accounts-service и Notifications.
-
-5. Сервиса генерации курсов валют (exchange-generator)
-
-Сервиса генерации курсов валют делает GET-запрос к внешнему открытому для всех API https://open.er-api.com/v6/latest/RUB c периодичностью один раз в минуту. Ввиду открытости сервиса не защищен SpringSequrity. Выполняет REST-запросы (в формате JSON) в сервис exchange-service.
-
-6. Сервиса конвертации валют (exchange-service);
-
-Сервиса конвертации валют - получает текущие курсы валют от exchange-generator иконвертирует их (конвртация не используется фронтом - только вывод текущего курса). Фронт выполняет REST-запросы (в формате JSON) из блока курсов валют в сервис exchange-service для получения информации о курсах валют.
-
-7. Сервис уведомлений (notifications-service)
-
-Сервис уведомлений отправляет уведомления - Alert пользователю о выполненном действии: переводе денег, пополнении счёта, снятии денег со счёта и т. д.
-
-Микросервисы аутентифицируются/авторизуются на сервере авторизации OAuth 2.0 Keycloak по client credentials, чтобы выполнять запросы в другие микросервисы. 
-
-Аутентификация/авторизация пользователей - по логину/паролю. У пользователя есть доступ к информации только о своём аккаунте и счёте.
+helm test helm test bank-platform --logs
 
 
 ## Запуск приложения в работу
 
 Для корректной работы приложения необходимо:
 
-- Переименовать файлы application.template.yml -> application.yml. Прописать свои логин и пароль для БД PostgreSQL и client-secret из Keycloak.
+- Запустить локально на Виндовс: сервер авторизации OAuth 2.0 Keycloak на порту 8090.
 
-- Запустить контейнер consul в Докере на порту 8500 командой: docker run -d --name=consul -p 8500:8500 consul:1.14 (при работе на Виндовс Докер Десктоп должен быть запущен). 
+        В приложении используется URL, который подключается напрямую к локальному серверу Keycloak: http://192.168.0.140:8090/realms/bank.
 
-Для работы с получением общих настройки из Externalized/Distributed Config - создать в панели управления Consul: http://localhost:8500/ui/dc1/kv - для каждого микросервиса конфиг (на примере transfer-service) config/transfer-service/data и переместить туда всю конфигурацию файла application.yml, кроме блока, который остается в application.yml: 
+        192.168.0.140 — это IP машины в локальной сети, с которой запускается Minikube.
 
+        8090 — это порт, на котором поднят Keycloak. 
 
-        spring:
-            application:
-                name: transfer-service        
-            cloud:
-                consul:
-                host: localhost
-                port: 8500
-                enabled: true
-                discovery:
-                    register: true
-                    prefer-ip-address: true
-            config:
-                import: "optional:consul:/transfer-service/data"
-        
+        /realms/bank — это путь к Realm в Keycloak. 
 
-Для работы с получением настройки микросервиса из application.yml - оставляем файл как есть, блок импорта настроек из Consul - должен удален или закомментирован.
+        Узнать IP хоста:
 
-- Запустить локально на Виндовс: сервер авторизации OAuth 2.0 Keycloak.
+        Открыть PowerShell и выполнить: ipconfig
+
+        Найти IPv4-адрес адаптера, который используется для подключения к локальной сети. Это будет аналог 192.168.0.140. Если адрес отличается, его необходимо изменить в настройках приложения.
 
 - В Keycloak должен быть создан Realm - bank и созданы клиенты: account-service, gateway-service, cash-service, exchange-service, transfer-service, notifications-service, присвоены роли: openid, profile, email и получены client-secret, котрые нужно будет прописать в application.yml каждого сервиса.
 
-- Запустить локально на Виндовс PostgreSQL и создать БД bank c двумя схемамми:
+- В контейнере с PostgreSQL создать БД bank c двумя схемамми:
 
 1. account - таблица account с соответствующими модели полями;
 
-2. users - таблица user с соответствующими модели полями;
+2. users - таблица user с соответствующими модели полями.
 
+- Создать Secret для Keycloak client-secret следующими командами:
 
-- Для сборки и запуска приложения из исходников локально на хостовой машине ОС Виндовс нужно последовательно запустить в работу каждый микросервис командами:
+        kubectl create secret generic account-service-keycloak-secret \
+        --from-literal=client-secret=your_client-secret \
+        -n default
 
-mvn -pl account-service spring-boot:run
+        kubectl create secret generic cash-service-keycloak-secret \
+        --from-literal=client-secret=your_client-secret \
+        -n default
 
-mvn -pl gateway-service spring-boot:run
+        kubectl create secret generic gateway-service-keycloak-secret \
+        --from-literal=client-secret=your_client-secret \
+        -n default
 
-mvn -pl cash-service spring-boot:run
+        kubectl create secret generic transfer-service-keycloak-secret \
+        --from-literal=client-secret=your_client-secret \
+        -n default
 
-mvn -pl exchange-service spring-boot:run
+- Создать Secret для Postgres следующими командами:
 
-mvn -pl exchange-generator spring-boot:run 
+        kubectl create secret generic account-service-db-credentials \
+        --from-literal=username=your_username \
+        --from-literal=password=your_secret_pass \
+        -n default
 
-mvn -pl transfer-service spring-boot:run
-
-mvn -pl notifications-service spring-boot:run 
-
-- Для удобства запуска всех сервисов создан скрипт run-all.sh. При его запуске - стартуют все микросервисы и записывается pid каждого, для возможности их остановки с помощью скрипта stop-all.sh.
-
-При этом: 
-
-    Собирается приложения (компилирует Java-код, копирует ресурсы, прогоняет аннотации).
-
-    Поднимается приложение прямо из исходников — без явного создания JAR.
-
-    Подтягиваются зависимости на лету из локального Maven-репозитория (~/.m2/repository).
-
-    Передаются в приложение все свойства (из application.yml).
-
-    Проект остается в «живом» состоянии — пока не остановим процесс (Ctrl+C).
-
-Приложение открывается по адресу: http://localhost:8080/ - открывается страница регистрации, для зарегистрированного пользователя - ссылка на страницу авторизации Keycloak.
-
-
-- Сборка и запуск приложения в контейнерах: 
-
-Для запуска Микросервисов в Docker-контейнерах с открытым веб-портом, доступа из браузера и межсервисного взаимодействия (реализация паттерна Single Service per Host) в кадждом микросервисе создан Dockerfile.
-
-Для развёртывания и запуска всего мультипроекта с помощью Docker Compose создан файл docker-compose.yml. В существующей конфигурации - общие настройки берутся из Externalized/Distributed Config. Для этого, аналогично развертке приложения локкально, необходимо создать в панели управления Consul: http://localhost:8500/ui/dc1/kv - для каждого микросервиса конфиг и переместить туда всю конфигурацию файла application.yml. Отличия в конфигурации при рботе в контейнере (заменить для микросервисов, использующих данные настройки):
-
-    1. jwt:
-        issuer-uri: http://localhost:8090/realms/bank - заменить на:
-
-    jwt:
-        issuer-uri: http://keycloak:8080/realms/bank-realm
-
-
-    2. keycloak:
-            token-uri: http://localhost:8090/realms/bank/protocol/openid-connect/token - заменить на 
-
-        keycloak:
-              token-uri: http://host.docker.internal:8090/realms/bank/protocol/openid-connect/token
-
-    3. r2dbc:
-        url: r2dbc:postgresql://localhost:5432/bank?currentSchema=account - заменить на 
-
-    r2dbc:
-        url: r2dbc:postgresql://host.docker.internal:5432/bank?currentSchema=account
-
-Запуск всего приложения в контейнере командой: docker-compose up --build
+        kubectl create secret generic gateway-service-db-credentials \
+        --from-literal=username=your_username \
+        --from-literal=password=your_secret_pass \
+        -n default
 
 
 
+- Для развёртывание микросервисов локально в Kubernetes:
 
+запустить Minikube:
+
+        minikube start
+
+        Проверить статус:
+
+        minikube status
+
+Обновить зависимости:
+
+        helm dependency update helm-charts/bank-platform
+
+Запустить Helm для всех микросервисов:
+
+        helm upgrade --install bank-platform helm-charts/bank-platform -f helm-charts/bank-platform/values.yaml
+
+Проверить PVC и Pods
+
+        kubectl get pvc -n default
+
+        kubectl get pods -n default
 
 
 ## Тестирование
 
-
-В связи с большим объемом работы по созданию приложения (предлложенного материала для изучения в спринте, к сожалению, было недостаточно), для тестирования были разработаны только контрактные тесты. Всего разработано 10 контрактных тестов. Прошу зачесть данную работу.
-
-Протетированы: account-service, gateway-service, cash-service, exchange-service , transfer-service и notification-service.
-
-Контракты и тесты лежат внутри тестируемого модуля сервиса. Тесты контрактов запускаются в папке конкретного сервиса для удобства, скорости и корректного использования локальных stub-ов.
-
-Запуск теста осуществляется командой: mvn test в package тестируемого сервиса.
+Для тестирования Helm-чартов реализованы тесты с использованием возможностей тестирования Helm-чартов.
 
 
 
 ## Скрины работы приложения:
 
 
-Создание счета пользователя:
+Вход в приложение:
 
 
-![Создание счета](img/create.jpg)
+![Вход](img/gateway.jpg)
 
 
 Пополнение счета пользователя:
 
 
-![Создание счета](img/deposit.jpg)
+![пополнение](img/deposit1.jpg)
 
 
-Превод со счета на счет по номеру счета и имени:
+Перевод со счета на счет по номеру счета и имени:
 
+![перевод](img/transfer1.jpg)
 
-![Создание счета](img/transfer.jpg)
+Поды Status:
+
+![поды](img/pods1.jpg)
+
+Тесты:
+
+![тесты](img/tests.jpg)

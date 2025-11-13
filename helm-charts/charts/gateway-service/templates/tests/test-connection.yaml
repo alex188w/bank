@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "gateway-service.fullname" . }}-test-connection"
+  labels:
+    app: "{{ include "gateway-service.name" . }}"
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: curl
+      image: curlimages/curl:8.6.0
+      command: ['sh', '-c', 'curl -sf http://{{ include "gateway-service.fullname" . }}:8080/actuator/health']
+  restartPolicy: Never

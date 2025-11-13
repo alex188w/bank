@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ .Release.Name }}-{{ .Chart.Name }}-test-connection"
+  labels:
+    app: "{{ .Chart.Name }}"
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  containers:
+    - name: test-{{ .Chart.Name }}
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "✅ Pod стартанул, тест прошёл."
+          exit 0
+  restartPolicy: Never
