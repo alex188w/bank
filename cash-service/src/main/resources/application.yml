@@ -1,42 +1,24 @@
 spring:
   application:
     name: cash-service
+
   security:
       oauth2:
         resourceserver:
           jwt:
-            issuer-uri: http://localhost:8090/realms/bank
+            issuer-uri: http://192.168.0.140:8090/realms/bank
 
         client:
           registration:
             cash-service-client:      # имя регистрации — можно любое понятное
               provider: keycloak
               client-id: cash-service    # этот клиент должен быть создан в Keycloak            
-              client-secret: client-secret"cash-service" # ваш client-secret из Keycloak для cash-service
+              client-secret: "${KEYCLOAK_CLIENT_SECRET}"    # предаем в Secret для Keycloak client-secret
               scope: openid, profile, email
               authorization-grant-type: client_credentials
           provider:
             keycloak:
-              token-uri: http://localhost:8090/realms/bank/protocol/openid-connect/token
-  # cloud:
-  #   consul:
-  #     host: localhost
-  #     port: 8500
-  #     enabled: true
-  #     discovery:
-  #       register: true
-  #       prefer-ip-address: true
-
-  # config:
-  #   import: "optional:consul:/cash-service/data"
-
-  cloud:
-    consul:
-      enabled: false        # полностью отключаем Consul
-      config:
-        enabled: false
-      discovery:
-        enabled: false
+              token-uri: http://192.168.0.140:8090/realms/bank/protocol/openid-connect/token
 
 server:
   port: 8083

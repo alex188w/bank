@@ -10,7 +10,7 @@ COPY account-service/pom-docker.xml ./pom.xml
 COPY account-service/src ./src
 
 # Скачиваем зависимости и собираем
-RUN mvn dependency:go-offline -B
+# RUN mvn dependency:go-offline -B
 RUN mvn clean package -DskipTests
 
 # Этап 2: минимальный runtime-образ

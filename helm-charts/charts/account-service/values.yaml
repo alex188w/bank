@@ -7,32 +7,28 @@ image:
 service:
   port: 8082
 
+# Конфигурация Spring
 config:
   spring:
+    application:
+      name: account-service
     r2dbc:
-      url: "r2dbc:postgresql://bank-platform-postgres:5432/bank?currentSchema=account"
-      username: postgres
-      password: secret_pass
+      url: "r2dbc:postgresql://bank-platform-postgres:5432/bank?currentSchema=users"
+    security:
+      oauth2:
+        client:
+          registration:
+            account-client:
+              client-id: account-service
+              client-secret: "${KEYCLOAK_CLIENT_SECRET}"  # Берём из env
+          provider:
+            keycloak:
+              issuer-uri: http://192.168.0.140:8090/realms/bank
 
-# --- Добавлено для External Secrets ---
-secretStore:
-  create: false               # если true — Helm создаст SecretStore
-  name: bank-secret-store    # имя SecretStore (используется и в ExternalSecret)
-  kind: SecretStore          # тип — локальный Kubernetes SecretStore
+# Секреты
+account-service:
+  secrets:
+    keycloakSecret: account-service-keycloak-secret
+    dbCredentials: account-service-db-credentials
 
-externalSecrets:
-  enabled: true
-  refreshInterval: 1h
-  data:
-    - secretKey: SPRING_R2DBC_PASSWORD
-      remoteRef:
-        key: postgres-secret
-        property: SPRING_R2DBC_PASSWORD
-    - secretKey: OAUTH_CLIENT_SECRET
-      remoteRef:
-        key: oauth-secret
-        property: OAUTH_CLIENT_SECRET
 
-# secretStore:
-#   create: true
-#   name: local-secret-store

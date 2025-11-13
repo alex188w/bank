@@ -8,13 +8,19 @@ data:
       application:
         name: gateway-service
 
-      r2dbc:
-        url: "r2dbc:postgresql://bank-platform-postgres:5432/bank?currentSchema=users"
-        username: "postgres"
-        password: "secret_pass"
+      url: "r2dbc:postgresql://bank-platform-postgres:5432/bank?currentSchema=users"
+        username: "${SPRING_R2DBC_USERNAME}"
+        password: "${SPRING_R2DBC_PASSWORD}"
 
-    server:
-      port: 8082
+      security:
+        oauth2:
+          client:
+            registration:
+              gateway-client:
+                client-secret: "${KEYCLOAK_CLIENT_SECRET}"  # переменная подхватится из env
+
+      server:
+        port: 8080
 
     management:
       health:

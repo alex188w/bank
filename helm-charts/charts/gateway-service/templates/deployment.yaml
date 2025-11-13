@@ -20,11 +20,30 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: {{ .Values.service.port }}
+
+          # Конфигурация через ConfigMap/Secret
           envFrom:
             - configMapRef:
                 name: {{ include "gateway-service.fullname" . }}-config
-            - secretRef:
-                name: {{ include "gateway-service.fullname" . }}-secret
+
+          # Подключение реальных секретов
+          env:
+            - name: SPRING_R2DBC_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ index .Values "gateway-service" "secrets" "dbCredentials" }}
+                  key: username
+            - name: SPRING_R2DBC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ index .Values "gateway-service" "secrets" "dbCredentials" }}
+                  key: password
+            - name: KEYCLOAK_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ index .Values "gateway-service" "secrets" "keycloakSecret" }}
+                  key: client-secret
+
           volumeMounts:
             - name: config
               mountPath: /config

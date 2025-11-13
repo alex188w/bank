@@ -1,23 +1,3 @@
-# # Этап 1: сборка приложения
-# FROM maven:3.9.9-eclipse-temurin-21 AS builder
-# WORKDIR /app
-# COPY . .
-# RUN ./mvnw clean package -DskipTests
-
-# # Этап 2: минимальный runtime-образ
-# FROM eclipse-temurin:21-jre
-# WORKDIR /app
-
-# # Копируем только готовый JAR
-# COPY --from=builder /app/target/notification-service-*.jar app.jar
-
-# # Открываем порт, указанный в application.yml
-# EXPOSE 8087
-
-# # Указываем стандартную команду запуска Spring Boot
-# ENTRYPOINT ["java", "-jar", "app.jar"]
-
-
 # ========= Этап 1: сборка приложения =========
 FROM maven:3.9.9-eclipse-temurin-21 AS builder
 WORKDIR /app

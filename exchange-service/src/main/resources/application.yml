@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: exchange-service
+    
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://192.168.0.140:8090/realms/bank
+
+server:
+  port: 8084
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+exchange:
+  generator-url: http://bank-platform-exchangeGenerator:8085/generate/rates
+
+

@@ -10,8 +10,15 @@ data:
 
       r2dbc:
         url: "r2dbc:postgresql://bank-platform-postgres:5432/bank?currentSchema=account"
-        username: "postgres"
-        password: "secret_pass"
+        username: "${SPRING_R2DBC_USERNAME}"
+        password: "${SPRING_R2DBC_PASSWORD}"
+
+      security:
+        oauth2:
+          client:
+            registration:
+              account-client:
+                client-secret: "${KEYCLOAK_CLIENT_SECRET}"  # переменная подхватится из env
 
     server:
       port: 8082

@@ -1,0 +1,61 @@
+pipeline {
+    agent { label 'bank-agent' }
+
+    environment {
+        IMAGE_NAME = "notification-service"
+        IMAGE_TAG = "${env.BUILD_NUMBER}"
+        REGISTRY = "alex188w"
+        CHART_PATH = "helm-charts/charts/notification-service"
+        KUBE_NAMESPACE = "default"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build JAR') {
+            steps {
+                sh 'mvn clean package -f notification-service/pom-docker.xml -DskipTests'
+            }
+        }
+
+        stage('Docker Build & Push') {
+            steps {
+                script {
+                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-creds') {
+                        sh """
+                            docker build -t $REGISTRY/$IMAGE_NAME:$IMAGE_TAG \
+                                --build-arg SERVICE_NAME=$IMAGE_NAME \
+                                --build-arg SERVICE_PORT=8087 \
+                                -f Dockerfile .
+                            docker push $REGISTRY/$IMAGE_NAME:$IMAGE_TAG
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                sh """
+                    helm upgrade --install $IMAGE_NAME $CHART_PATH \
+                        --namespace $KUBE_NAMESPACE \
+                        --set image.repository=$REGISTRY/$IMAGE_NAME \
+                        --set image.tag=$IMAGE_TAG
+                """
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "$IMAGE_NAME:$IMAGE_TAG successfully deployed to Kubernetes!"
+        }
+        failure {
+            echo "Build or deployment failed!"
+        }
+    }
+}

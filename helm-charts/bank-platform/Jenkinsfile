@@ -1,0 +1,40 @@
+pipeline {
+    agent { label 'bank-agent' }
+
+    environment {
+        KUBE_NAMESPACE = "default"
+        CHART_PATH = "helm-charts/bank-platform"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Helm Dependencies') {
+            steps {
+                sh "helm dependency update ${CHART_PATH}"
+            }
+        }
+
+        stage('Deploy Umbrella Chart') {
+            steps {
+                sh """
+                    helm upgrade --install bank-platform ${CHART_PATH} \
+                        --namespace ${KUBE_NAMESPACE}
+                """
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Bank Platform successfully deployed!"
+        }
+        failure {
+            echo "Deployment failed!"
+        }
+    }
+}
