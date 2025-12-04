@@ -24,4 +24,4 @@ dependencies:
   repository: file://../charts/transfer-service
   version: 0.1.0
 digest: sha256:67e1e476ddbcaa454ef009bdb1c03183d8126c6f99d48219fc82b14e67ff0af8
-generated: "2025-11-09T19:01:35.320633+05:00"
+generated: "2025-11-29T20:09:12.5922648+05:00"

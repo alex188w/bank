@@ -44,4 +44,3 @@ dependencies:
     repository: "file://../charts/transfer-service"
     condition: transferService.enabled
 
-

@@ -30,4 +30,3 @@ gateway-service:
   secrets:
     keycloakSecret: gateway-service-keycloak-secret
     dbCredentials: gateway-service-db-credentials
-

@@ -2,11 +2,23 @@ pipeline {
     agent { label 'bank-agent' }
 
     environment {
-        IMAGE_NAME = "transfer-service"
-        IMAGE_TAG = "${env.BUILD_NUMBER}"
-        REGISTRY = "alex188w"
-        CHART_PATH = "helm-charts/charts/transfer-service"
-        KUBE_NAMESPACE = "default"
+        IMAGE_NAME         = "transfer-service"
+        IMAGE_TAG          = "${env.BUILD_NUMBER}"
+        REGISTRY           = "alex188w"
+        CHART_PATH         = "helm-charts/charts/transfer-service"
+        DOCKER_CREDS       = "dockerhub-creds"
+
+        KUBE_NAMESPACE_DEV  = "dev"
+        KUBE_NAMESPACE_TEST = "test"
+        KUBE_NAMESPACE_PROD = "prod"
+    }
+
+    parameters {
+        choice(
+            name: 'DEPLOY_ENV',
+            choices: ['dev', 'test', 'prod'],
+            description: 'Куда деплоим эту сборку'
+        )
     }
 
     stages {
@@ -25,37 +37,107 @@ pipeline {
         stage('Docker Build & Push') {
             steps {
                 script {
-                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-creds') {
+                    docker.withRegistry('https://index.docker.io/v1/', DOCKER_CREDS) {
                         sh """
-                            docker build -t $REGISTRY/$IMAGE_NAME:$IMAGE_TAG \
-                                --build-arg SERVICE_NAME=$IMAGE_NAME \
-                                --build-arg SERVICE_PORT=8086 \
-                                -f Dockerfile .
-                            docker push $REGISTRY/$IMAGE_NAME:$IMAGE_TAG
+                          docker build -t $REGISTRY/$IMAGE_NAME:$IMAGE_TAG \
+                              --build-arg SERVICE_NAME=$IMAGE_NAME \
+                              --build-arg SERVICE_PORT=8082 \
+                              -f Dockerfile .
+                          docker push $REGISTRY/$IMAGE_NAME:$IMAGE_TAG
                         """
                     }
                 }
             }
         }
 
-        stage('Deploy to Kubernetes') {
+        // ===== DEPLOY + TEST для dev/test =====
+        stage('Deploy to dev/test') {
+            when {
+                anyOf {
+                    expression { params.DEPLOY_ENV == 'dev' }
+                    expression { params.DEPLOY_ENV == 'test' }
+                }
+            }
             steps {
-                sh """
-                    helm upgrade --install $IMAGE_NAME $CHART_PATH \
-                        --namespace $KUBE_NAMESPACE \
+                script {
+                    def ns = (params.DEPLOY_ENV == 'dev') ? KUBE_NAMESPACE_DEV : KUBE_NAMESPACE_TEST
+
+                    sh """
+                      helm upgrade --install $IMAGE_NAME $CHART_PATH \
+                        --namespace ${ns} \
                         --set image.repository=$REGISTRY/$IMAGE_NAME \
-                        --set image.tag=$IMAGE_TAG
-                """
+                        --set image.tag=$IMAGE_TAG \
+                        --set env=${params.DEPLOY_ENV}
+                    """
+                }
+            }
+        }
+
+        stage('Helm tests (dev/test)') {
+            when {
+                expression { params.DEPLOY_ENV == 'test' }
+            }
+            steps {
+                script {
+                    sh """
+                      helm test $IMAGE_NAME \
+                        --namespace ${KUBE_NAMESPACE_TEST} \
+                        --timeout 2m --logs
+                    """
+                }
+            }
+        }
+
+        // ===== PROD: сначала test-namespace + тесты, потом prod =====
+        stage('Pre-prod deploy to test & helm tests') {
+            when {
+                expression { params.DEPLOY_ENV == 'prod' }
+            }
+            steps {
+                script {
+                    // деплоим ту же версию в test
+                    sh """
+                      helm upgrade --install $IMAGE_NAME $CHART_PATH \
+                        --namespace ${KUBE_NAMESPACE_TEST} \
+                        --set image.repository=$REGISTRY/$IMAGE_NAME \
+                        --set image.tag=$IMAGE_TAG \
+                        --set env=test
+                    """
+
+                    // запускаем helm test для transfer-service
+                    sh """
+                      helm test $IMAGE_NAME \
+                        --namespace ${KUBE_NAMESPACE_TEST} \
+                        --timeout 2m --logs
+                    """
+                }
+            }
+        }
+
+        stage('Deploy to prod') {
+            when {
+                expression { params.DEPLOY_ENV == 'prod' }
+            }
+            steps {
+                script {
+                    sh """
+                      helm upgrade --install $IMAGE_NAME $CHART_PATH \
+                        --namespace ${KUBE_NAMESPACE_PROD} \
+                        --set image.repository=$REGISTRY/$IMAGE_NAME \
+                        --set image.tag=$IMAGE_TAG \
+                        --set env=prod
+                    """
+                }
             }
         }
     }
 
     post {
         success {
-            echo "$IMAGE_NAME:$IMAGE_TAG successfully deployed to Kubernetes!"
+            echo "$IMAGE_NAME:$IMAGE_TAG успешно задеплоен (DEPLOY_ENV=${params.DEPLOY_ENV})"
         }
         failure {
-            echo "Build or deployment failed!"
+            echo "Сборка или деплой провалились (DEPLOY_ENV=${params.DEPLOY_ENV})"
         }
     }
 }

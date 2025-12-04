@@ -7,6 +7,13 @@ image:
 service:
   port: 8082
 
+database:
+  host: "bank-platform-postgres"
+  port: 5432
+  name: "bank"
+  initialize: "false"
+  initMode: "never"
+
 # Конфигурация Spring
 config:
   spring:
@@ -23,7 +30,7 @@ config:
               client-secret: "${KEYCLOAK_CLIENT_SECRET}"  # Берём из env
           provider:
             keycloak:
-              issuer-uri: http://192.168.0.140:8090/realms/bank
+              issuer-uri: http://bank-platform-keycloak:8095/realms/bank
 
 # Секреты
 account-service:

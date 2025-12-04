@@ -18,6 +18,8 @@
         <module>exchange-generator</module>
         <module>transfer-service</module>
         <module>notification-service</module>
+        <module>auth-service</module>
+        
     </modules> 
 
     <parent>
@@ -89,6 +91,7 @@
                                         ./mvnw -pl exchange-generator spring-boot:run &amp;
                                         ./mvnw -pl exchange-service spring-boot:run &amp;
                                         ./mvnw -pl transfer-service spring-boot:run &amp;
+                                        ./mvnw -pl auth-service spring-boot:run &amp;
                                         ./mvnw -pl notification-service spring-boot:run;
                                         wait
                                     </argument>

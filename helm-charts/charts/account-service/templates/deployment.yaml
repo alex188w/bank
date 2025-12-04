@@ -40,11 +40,34 @@ spec:
                 secretKeyRef:
                   name: {{ index .Values "account-service" "secrets" "dbCredentials" }}
                   key: password
+            - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI
+              value: "http://bank-platform-keycloak:8095/realms/bank"
+            - name: SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_TOKEN_URI
+              value: "http://bank-platform-keycloak:8095/realms/bank/protocol/openid-connect/token"
+
             - name: KEYCLOAK_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: {{ index .Values "account-service" "secrets" "keycloakSecret" }}
                   key: client-secret
+
+          startupProbe:
+            tcpSocket:
+              port: 8082
+            failureThreshold: 30
+            periodSeconds: 5
+            
+          livenessProbe:
+            tcpSocket:
+              port: 8082
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            
+          readinessProbe:
+            tcpSocket:
+              port: 8082
+            initialDelaySeconds: 15
+            periodSeconds: 5
 
           volumeMounts:
             - name: config

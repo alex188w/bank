@@ -47,7 +47,7 @@ public class WebClientConfig {
         }
 
         @Bean
-        @Primary // ✅ теперь действительно работает
+        @Primary // теперь действительно работает
         public WebClient accountWebClient() {
                 return buildWebClient(accountBaseUrl, "gateway-client");
         }

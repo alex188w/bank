@@ -6,15 +6,34 @@ metadata:
     app: "{{ .Chart.Name }}"
   annotations:
     "helm.sh/hook": test
-    "helm.sh/hook-delete-policy": hook-succeeded
 spec:
+  restartPolicy: Never
   containers:
-    - name: test-{{ .Chart.Name }}
-      image: busybox:1.36
+    - name: curl
+      image: curlimages/curl:8.6.0
       command:
         - sh
         - -c
-        - |
-          echo "✅ Pod стартанул, тест прошёл."
-          exit 0
-  restartPolicy: Never
+        - >
+          echo "Testing TCP connection to {{ .Chart.Name }}..." &&
+          nc -zv {{ .Release.Name }}-{{ .Chart.Name }} 8084
+
+# apiVersion: v1
+# kind: Pod
+# metadata:
+#   name: "{{ .Release.Name }}-{{ .Chart.Name }}-test-connection"
+#   labels:
+#     app: "{{ .Chart.Name }}"
+#   annotations:
+#     "helm.sh/hook": test
+# spec:
+#   containers:
+#     - name: curl
+#       image: curlimages/curl:8.6.0
+#       command:
+#         - sh
+#         - -c
+#         - >
+#           echo "Testing connection to exchange-service..." &&
+#           nc -zv {{ .Release.Name }}-exchange-service 8084
+#       restartPolicy: Never

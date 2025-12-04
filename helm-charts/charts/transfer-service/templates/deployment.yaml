@@ -27,6 +27,24 @@ spec:
             - name: config
               mountPath: /config
 
+          startupProbe:
+            tcpSocket:
+              port: 8086
+            failureThreshold: 30
+            periodSeconds: 5
+            
+          livenessProbe:
+            tcpSocket:
+              port: 8086
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            
+          readinessProbe:
+            tcpSocket:
+              port: 8086
+            initialDelaySeconds: 15
+            periodSeconds: 5
+
       volumes:
         - name: config
           configMap:

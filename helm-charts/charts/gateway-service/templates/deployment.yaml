@@ -44,6 +44,32 @@ spec:
                   name: {{ index .Values "gateway-service" "secrets" "keycloakSecret" }}
                   key: client-secret
 
+          resources:
+                requests:
+                  cpu: "100m"
+                  memory: "256Mi"
+                limits:
+                  cpu: "500m"
+                  memory: "512Mi"
+
+          startupProbe:
+            tcpSocket:
+              port: 8080
+            failureThreshold: 30
+            periodSeconds: 5
+            
+          livenessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 5
+
           volumeMounts:
             - name: config
               mountPath: /config
@@ -52,3 +78,5 @@ spec:
         - name: config
           configMap:
             name: {{ include "gateway-service.fullname" . }}-config
+
+
