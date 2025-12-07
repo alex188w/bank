@@ -2,6 +2,11 @@ spring:
   application:
     name: notification-service
 
+app:
+  kafka:
+    topics:
+      notifications: notifications.raw
+
 server:
   port: 8087
 

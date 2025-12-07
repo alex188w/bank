@@ -17,7 +17,4 @@ management:
       exposure:
         include: health,info
 
-exchange:
-  generator-url: http://bank-platform-exchangeGenerator:8085/generate/rates
-
 

@@ -24,11 +24,11 @@ public class WebClientConfig {
                 .build();
     }
 
-    @Bean
-    public WebClient notificationWebClient() {
-        // без OAuth2, просто прямое соединение
-        return WebClient.builder()
-                .baseUrl("http://bank-platform-notification-service:8087") // notification-service
-                .build();
-    }
+    // @Bean
+    // public WebClient notificationWebClient() {
+    //     // без OAuth2, просто прямое соединение
+    //     return WebClient.builder()
+    //             .baseUrl("http://bank-platform-notification-service:8087") // notification-service
+    //             .build();
+    // }
 }

@@ -77,4 +77,23 @@ transferService:
   service:
     port: 8086
 
+kaffka-service:
+  image:
+    repository: apache/kafka
+    tag: latest
+    pullPolicy: IfNotPresent
+  persistence:
+    enabled: true
+    size: 5Gi
+    storageClassName: ""
+  service:
+    port: 9092
+  kafka:
+    advertisedListeners: "PLAINTEXT://kaffka-service:9092"
+    controllerQuorumVoters: "1@kaffka-service-0.kaffka-service-headless:9093"
+
+global:
+  kafka:
+    bootstrapServers: "kaffka-service:9092"
+
 

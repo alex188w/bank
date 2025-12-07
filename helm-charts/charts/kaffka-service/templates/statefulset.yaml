@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "kaffka-service.fullname" . }}
+  labels:
+    {{- include "kaffka-service.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "kaffka-service.fullname" . }}-headless
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "kaffka-service.fullname" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "kaffka-service.fullname" . }}
+        {{- include "kaffka-service.labels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: kafka
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: kafka
+              containerPort: 9092
+            - name: controller
+              containerPort: 9093
+          env:
+            - name: KAFKA_PROCESS_ROLES
+              value: "{{ .Values.kafka.processRoles | default "broker,controller" }}"
+            - name: KAFKA_NODE_ID
+              value: "{{ .Values.kafka.nodeId | quote }}"
+            - name: KAFKA_CONTROLLER_LISTENER_NAMES
+              value: "{{ .Values.kafka.controllerListenerNames }}"
+            - name: KAFKA_CONTROLLER_QUORUM_VOTERS
+              value: "{{ .Values.kafka.controllerQuorumVoters }}"
+
+            - name: KAFKA_LISTENERS
+              value: "{{ .Values.kafka.listeners }}"
+            - name: KAFKA_ADVERTISED_LISTENERS
+              value: "{{ .Values.kafka.advertisedListeners }}"
+            - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+              value: "{{ .Values.kafka.listenerSecurityProtocolMap }}"
+            - name: KAFKA_INTER_BROKER_LISTENER_NAME
+              value: "{{ .Values.kafka.interBrokerListenerName }}"
+
+            - name: KAFKA_LOG_DIRS
+              value: "{{ .Values.kafka.logDirs }}"
+            - name: CLUSTER_ID
+              value: "{{ .Values.kafka.clusterId }}"
+
+            - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+              value: "{{ .Values.kafka.offsetsTopicReplicationFactor | quote }}"
+            - name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
+              value: "{{ .Values.kafka.transactionStateLogReplicationFactor | quote }}"
+            - name: KAFKA_TRANSACTION_STATE_LOG_MIN_ISR
+              value: "{{ .Values.kafka.transactionStateLogMinIsr | quote }}"
+            - name: KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS
+              value: "{{ .Values.kafka.groupInitialRebalanceDelayMs | quote }}"
+
+          volumeMounts:
+            - name: data
+              mountPath: {{ .Values.kafka.logDirs }}
+
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "kaffka-service.fullname" . }}-data

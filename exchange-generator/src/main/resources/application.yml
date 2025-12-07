@@ -2,19 +2,19 @@ spring:
   application:
     name: exchange-generator
 
+  main:
+    allow-bean-definition-overriding: true
+
   security:
     oauth2:
       resourceserver:
         jwt:
           issuer-uri: http://192.168.0.140:8090/realms/bank
 
-  main:
-    allow-bean-definition-overriding: true
-
 server:
   port: 8085
 
+# Только внешний API
 exchange:
   api-url: https://open.er-api.com/v6/latest/RUB
-  target-url: http://bank-platform-exchange-service:8084/exchange/update
   update-interval-ms: 60000   # раз в минуту

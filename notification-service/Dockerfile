@@ -3,7 +3,12 @@ FROM maven:3.9.9-eclipse-temurin-21 AS builder
 WORKDIR /app
 
 # Подключаем зеркало для стабильных загрузок
-COPY notification-service/settings.xml /root/.m2/settings.xml
+COPY /settings.xml /root/.m2/settings.xml
+
+# 1. Собираем bank-events
+COPY bank-events/pom.xml ./bank-events/pom.xml
+COPY bank-events/src ./bank-events/src
+RUN mvn -f bank-events/pom.xml clean install -DskipTests
 
 # Копируем кастомный pom и исходники
 COPY notification-service/pom-docker.xml ./pom.xml

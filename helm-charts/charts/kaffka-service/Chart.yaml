@@ -1,0 +1,6 @@
+apiVersion: v2
+name: kaffka-service
+description: "Single-node Apache Kafka in KRaft mode (no ZooKeeper), for bank-platform"
+type: application
+version: 0.1.0
+appVersion: "latest"

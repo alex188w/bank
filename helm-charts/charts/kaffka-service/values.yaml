@@ -1,0 +1,41 @@
+replicaCount: 1
+
+image:
+  repository: apache/kafka
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  port: 9092
+
+persistence:
+  enabled: true
+  storageClassName: ""      # для Minikube можно оставить пустым
+  size: 5Gi
+  accessModes:
+    - ReadWriteOnce
+
+resources: {}
+
+kafka:
+  nodeId: 1
+  # можно оставить фиксированный, как в docker-compose
+  clusterId: "MkU3OEVBNTcwNTJENDM2Qk"
+  logDirs: "/tmp/kraft-combined-logs"
+
+  # Слушатели
+  listeners: "PLAINTEXT://:9092,CONTROLLER://:9093"
+  # важная часть: имя сервиса внутри кластера = kaffka-service
+  advertisedListeners: "PLAINTEXT://kaffka-service:9092"
+  listenerSecurityProtocolMap: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT"
+  interBrokerListenerName: "PLAINTEXT"
+  controllerListenerNames: "CONTROLLER"
+
+  # KRaft quorum (single-node)
+  controllerQuorumVoters: "1@kaffka-service-0.kaffka-service-headless:9093"
+
+  # single-broker настройки
+  offsetsTopicReplicationFactor: 1
+  transactionStateLogReplicationFactor: 1
+  transactionStateLogMinIsr: 1
+  groupInitialRebalanceDelayMs: 0
