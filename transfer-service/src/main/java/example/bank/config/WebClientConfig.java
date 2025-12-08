@@ -4,15 +4,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.client.WebClient;
 
-// @Configuration
-// public class WebClientConfig {
+@Configuration
+public class WebClientConfig {
 
-
-//     @Bean
-//     public WebClient notificationWebClient() {
-//         // без OAuth2, просто прямое соединение
-//         return WebClient.builder()
-//                 .baseUrl("http://bank-platform-notification-service:8087") // notification-service
-//                 .build();
-//     }
-// }
+    @Bean
+    public WebClient accountWebClient(WebClient.Builder builder) {
+        return builder
+                .baseUrl("http://bank-platform-account-service:8082") // account-service
+                .build();
+    }
+}

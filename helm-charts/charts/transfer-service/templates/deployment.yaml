@@ -23,9 +23,16 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "transfer-service.fullname" . }}-config
+          env:
+            - name: KEYCLOAK_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: transfer-service-keycloak-secret
+                  key: client-secret
+          volumeMounts:
           volumeMounts:
             - name: config
-              mountPath: /config
+              mountPath: /app/config
 
           startupProbe:
             tcpSocket:

@@ -3,10 +3,33 @@ kind: ConfigMap
 metadata:
   name: {{ include "exchange-service.fullname" . }}-config
 data:
-  application-k8s.yml: |
+  application.yml: |
     spring:
       application:
         name: exchange-service
+
+      security:
+        oauth2:
+          resourceserver:
+            jwt:
+              issuer-uri: http://192.168.0.140:8090/realms/bank
+              # позже заменишь на http://auth.localhost/realms/bank, когда поднимешь Keycloak в k8s
+
+      kafka:
+        bootstrap-servers: {{ .Values.global.kafka.bootstrapServers | quote }}
+        consumer:
+          group-id: exchange-service
+          key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+          value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+          properties:
+            spring.json.trusted.packages: "example.bank"
+        listener:
+          ack-mode: RECORD
+
+    app:
+      kafka:
+        topics:
+          exchange-rates: exchange.rates
 
     server:
       port: 8084

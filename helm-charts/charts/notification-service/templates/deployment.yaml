@@ -25,7 +25,7 @@ spec:
                 name: {{ include "notification-service.fullname" . }}-config
           volumeMounts:
             - name: config
-              mountPath: /config
+              mountPath: /app/config
 
           startupProbe:
             tcpSocket:

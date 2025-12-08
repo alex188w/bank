@@ -46,6 +46,6 @@ dependencies:
 
   - name: kaffka-service
     version: 0.1.0
-    repository: "file://../kaffka-service"
+    repository: "file://../charts/kaffka-service"
     condition: kaffkaService.enabled
 

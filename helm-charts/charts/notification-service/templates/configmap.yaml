@@ -3,17 +3,31 @@ kind: ConfigMap
 metadata:
   name: {{ include "notification-service.fullname" . }}-config
 data:
-  application-k8s.yml: |
+  application.yml: |
     spring:
       application:
         name: notification-service
+
+      main:
+        allow-bean-definition-overriding: true
+
+      kafka:
+        bootstrap-servers: {{ .Values.global.kafka.bootstrapServers | quote }}
+        streams:
+          application-id: notification-service-streams
+          properties:
+            spring.json.trusted.packages: "example.bank"
+
+    app:
+      kafka:
+        topics:
+          notifications: notifications.raw
 
     server:
       port: 8087
 
     management:
-      health:
-        db:
-          enabled: false
-        r2dbc:
-          enabled: false
+      endpoints:
+        web:
+          exposure:
+            include: health,info

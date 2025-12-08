@@ -3,10 +3,25 @@ kind: ConfigMap
 metadata:
   name: {{ include "transfer-service.fullname" . }}-config
 data:
-  application-k8s.yml: |
+  application.yml: |
     spring:
       application:
         name: transfer-service
+
+      kafka:
+        bootstrap-servers: {{ .Values.global.kafka.bootstrapServers | quote }}
+        producer:
+          key-serializer: org.apache.kafka.common.serialization.StringSerializer
+          value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+          acks: all
+          retries: 5
+          properties:
+            enable.idempotence: true
+
+    app:
+      kafka:
+        topics:
+          notifications: notifications.raw
 
     server:
       port: 8086

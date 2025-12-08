@@ -23,9 +23,17 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "cash-service.fullname" . }}-config
+          # Подключение реальных секретов
+          env:
+            - name: KEYCLOAK_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: cash-service-keycloak-secret
+                  key: client-secret
+
           volumeMounts:
             - name: config
-              mountPath: /config
+              mountPath: /app/config
 
           startupProbe:
             tcpSocket:

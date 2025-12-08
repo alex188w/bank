@@ -27,40 +27,43 @@ spec:
               containerPort: 9093
           env:
             - name: KAFKA_PROCESS_ROLES
-              value: "{{ .Values.kafka.processRoles | default "broker,controller" }}"
+              value: {{ default "broker,controller" .Values.kafka.processRoles | quote }}
             - name: KAFKA_NODE_ID
-              value: "{{ .Values.kafka.nodeId | quote }}"
+              value: {{ .Values.kafka.nodeId | quote }}
             - name: KAFKA_CONTROLLER_LISTENER_NAMES
-              value: "{{ .Values.kafka.controllerListenerNames }}"
+              value: {{ .Values.kafka.controllerListenerNames | quote }}
             - name: KAFKA_CONTROLLER_QUORUM_VOTERS
-              value: "{{ .Values.kafka.controllerQuorumVoters }}"
+              value: {{ .Values.kafka.controllerQuorumVoters | quote }}
 
             - name: KAFKA_LISTENERS
-              value: "{{ .Values.kafka.listeners }}"
+              value: {{ .Values.kafka.listeners | quote }}
             - name: KAFKA_ADVERTISED_LISTENERS
-              value: "{{ .Values.kafka.advertisedListeners }}"
+              value: {{ .Values.kafka.advertisedListeners | quote }}
             - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
-              value: "{{ .Values.kafka.listenerSecurityProtocolMap }}"
+              value: {{ .Values.kafka.listenerSecurityProtocolMap | quote }}
             - name: KAFKA_INTER_BROKER_LISTENER_NAME
-              value: "{{ .Values.kafka.interBrokerListenerName }}"
+              value: {{ .Values.kafka.interBrokerListenerName | quote }}
 
             - name: KAFKA_LOG_DIRS
-              value: "{{ .Values.kafka.logDirs }}"
+              value: {{ .Values.kafka.logDirs | quote }}
             - name: CLUSTER_ID
-              value: "{{ .Values.kafka.clusterId }}"
+              value: {{ .Values.kafka.clusterId | quote }}
 
             - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
-              value: "{{ .Values.kafka.offsetsTopicReplicationFactor | quote }}"
+              value: {{ .Values.kafka.offsetsTopicReplicationFactor | quote }}
             - name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
-              value: "{{ .Values.kafka.transactionStateLogReplicationFactor | quote }}"
+              value: {{ .Values.kafka.transactionStateLogReplicationFactor | quote }}
             - name: KAFKA_TRANSACTION_STATE_LOG_MIN_ISR
-              value: "{{ .Values.kafka.transactionStateLogMinIsr | quote }}"
+              value: {{ .Values.kafka.transactionStateLogMinIsr | quote }}
             - name: KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS
-              value: "{{ .Values.kafka.groupInitialRebalanceDelayMs | quote }}"
+              value: {{ .Values.kafka.groupInitialRebalanceDelayMs | quote }}
+            
+            - name: KAFKA_AUTO_CREATE_TOPICS_ENABLE
+              value: "true"
 
           volumeMounts:
             - name: data
-              mountPath: {{ .Values.kafka.logDirs }}
+              mountPath: {{ .Values.kafka.logDirs | quote }}
 
           resources:
             {{- toYaml .Values.resources | nindent 12 }}

@@ -17,7 +17,7 @@ public class SecurityConfig {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(exchanges -> exchanges
-                        .pathMatchers("/actuator/**", "/transfer/**").permitAll()
+                        .pathMatchers("/actuator/**").permitAll()
                         // .pathMatchers("/cash/deposit/**").hasAuthority("SERVICE_ACCESS")
                         .anyExchange().authenticated()
                 )

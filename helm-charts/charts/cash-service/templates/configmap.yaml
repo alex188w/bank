@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   name: {{ include "cash-service.fullname" . }}-config
 data:
-  application-k8s.yml: |
+  application.yml: |
     spring:
       application:
         name: cash-service

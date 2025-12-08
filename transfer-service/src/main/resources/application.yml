@@ -1,6 +1,8 @@
 spring:
   application:
     name: transfer-service
+  main:
+    allow-bean-definition-overriding: true
   security:
       oauth2:
         resourceserver:
@@ -18,6 +20,11 @@ spring:
           provider:
             keycloak:
               token-uri: http://192.168.0.140:8090/realms/bank/protocol/openid-connect/token
+
+app:
+  kafka:
+    topics:
+      notifications: notifications.raw
 
 server:
   port: 8086

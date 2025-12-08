@@ -31,7 +31,7 @@ public class SecurityConfig {
     @Bean
     public ReactiveJwtDecoder jwtDecoder() {
         return NimbusReactiveJwtDecoder.withJwkSetUri(
-                "http://bank-platform-keykloak-service:8090/realms/bank/protocol/openid-connect/certs"
+                "http://bank-platform-keycloak-service:8090/realms/bank/protocol/openid-connect/certs"
         ).build();
     }
 }

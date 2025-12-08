@@ -13,7 +13,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/exchange")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:8080")
 public class ExchangeController {
 
     private final ExchangeService exchangeService;

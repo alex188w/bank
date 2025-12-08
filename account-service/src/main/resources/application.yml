@@ -24,6 +24,11 @@ spring:
   r2dbc:
     url: "r2dbc:postgresql://bank-platform-postgres:5432/bank?currentSchema=account"
 
+app:
+  kafka:
+    topics:
+      notifications: notifications.raw
+
 server:
   port: 8082
 

@@ -22,11 +22,10 @@
     </properties>
 
     <dependencies>
-        <!-- WebFlux (только как сервер/SSE, без стартеров для клиента) -->
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-webflux</artifactId>
-        </dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webflux</artifactId>
+		</dependency>
 
         <!-- JSON / Jackson: для NotificationStreamsConfig (TypeReference, JsonSerde и т.п.) -->
         <dependency>
