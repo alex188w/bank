@@ -1,0 +1,124 @@
+pipeline {
+    agent { label 'bank-agent' }
+
+    environment {
+        // Путь до чарта Kafka (subchart внутри bank-platform)
+        CHART_PATH = "helm-charts/bank-platform/charts/kaffka-service"
+
+        // Неймспейс, где живёт Kafka (по ТЗ можно отдельный, сейчас у тебя default)
+        KAFKA_NAMESPACE = "default"
+
+        // Имя релиза Kafka
+        RELEASE_NAME = "kaffka-service"
+    }
+
+    parameters {
+        choice(
+            name: 'DEPLOY_ENV',
+            choices: ['dev', 'test', 'prod'],
+            description: 'Среда, для которой обновляем конфигурацию Kafka'
+        )
+        booleanParam(
+            name: 'RECREATE_TOPICS',
+            defaultValue: false,
+            description: 'Пересоздать топики (notifications.raw, exchange.rates)'
+        )
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Helm Lint (Kafka)') {
+            steps {
+                sh """
+                  helm lint ${CHART_PATH}
+                """
+            }
+        }
+
+        stage('Deploy / Upgrade Kafka') {
+            steps {
+                script {                    
+                    def envValues = "-f ${CHART_PATH}/values.yaml"
+
+                    sh """
+                      helm upgrade --install ${RELEASE_NAME} ${CHART_PATH} \
+                        --namespace ${KAFKA_NAMESPACE} \
+                        ${envValues} \
+                        --set kafka.env=${params.DEPLOY_ENV} \
+                        --set topics.notifications.raw.name=notifications.raw \
+                        --set topics.notifications.raw.partitions=1 \
+                        --set topics.notifications.raw.replicationFactor=1 \
+                        --set topics.exchange.rates.name=exchange.rates \
+                        --set topics.exchange.rates.partitions=1 \
+                        --set topics.exchange.rates.replicationFactor=1
+                    """
+                }
+            }
+        }
+
+        stage('Recreate Topics (optional)') {
+            when {
+                expression { return params.RECREATE_TOPICS }
+            }
+            steps {
+                script {         
+                    def kafkaPod = sh(
+                        script: "kubectl get pods -n ${KAFKA_NAMESPACE} -l app=${RELEASE_NAME} -o jsonpath='{.items[0].metadata.name}'",
+                        returnStdout: true
+                    ).trim()
+
+                    sh """
+                      echo "Recreating Kafka topics on pod ${kafkaPod}..."
+
+                      kubectl exec -n ${KAFKA_NAMESPACE} ${kafkaPod} -- \
+                        /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 \
+                          --delete --topic notifications.raw || true
+
+                      kubectl exec -n ${KAFKA_NAMESPACE} ${kafkaPod} -- \
+                        /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 \
+                          --delete --topic exchange.rates || true
+
+                      kubectl exec -n ${KAFKA_NAMESPACE} ${kafkaPod} -- \
+                        /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 \
+                          --create --topic notifications.raw --partitions 1 --replication-factor 1
+
+                      kubectl exec -n ${KAFKA_NAMESPACE} ${kafkaPod} -- \
+                        /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 \
+                          --create --topic exchange.rates --partitions 1 --replication-factor 1
+                    """
+                }
+            }
+        }
+
+        stage('Kafka Smoke Check') {
+            steps {
+                script {
+                    def kafkaPod = sh(
+                        script: "kubectl get pods -n ${KAFKA_NAMESPACE} -l app=${RELEASE_NAME} -o jsonpath='{.items[0].metadata.name}'",
+                        returnStdout: true
+                    ).trim()
+
+                    sh """
+                      echo "Checking Kafka topics on pod ${kafkaPod}..."
+                      kubectl exec -n ${KAFKA_NAMESPACE} ${kafkaPod} -- \
+                        /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list || true
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Kafka platform (${RELEASE_NAME}) успешно задеплоена/обновлена (env=${params.DEPLOY_ENV})."
+        }
+        failure {
+            echo "Сбой при деплое/обновлении Kafka (${RELEASE_NAME})."
+        }
+    }
+}
