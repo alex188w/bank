@@ -1,6 +1,12 @@
 spring:
+  application:
+    name: notification-service  
   main:
     allow-bean-definition-overriding: true
+
+  kafka:
+    streams:
+      application-id: notification-service-streams  
 
 app:
   kafka:
@@ -15,3 +21,6 @@ logging:
   level:
     root: INFO
     example.bank: DEBUG
+
+
+
