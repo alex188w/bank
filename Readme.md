@@ -1,152 +1,63 @@
-## Работа с замечаниями Спринт 10:
+## Работа с замечаниями и предложениями Спринт 11:
 
-* Убраны бинарные архивы Helm из репозитория.
+1. Тест CashControllerKafkaIT исправлено:
 
-* В Деплоймент добавлены корректные настройки resources: requests/limits, livenessProbe и readinessProbe.
+@SpringBootTest(classes = CashServiceApplication.class, ...) - поднимается нормальный Boot-контекст, со всеми автоконфигами, включая KafkaTemplate.
 
-* Исправлен Jenkins-пайплайн: тест → dev → test → prod: сделан правильный многоэтапный CI/CD с разделением namespace:
+Не ограничиваемся classes = CashController.class:
 
-bank-dev
+    KafkaTemplate<String, Notification> создаётся автоконфигом spring-kafka,
+    CashController получает реальный KafkaTemplate и мокнутый WebClient.
 
-bank-test
+Через @TestPropertySource:
 
-bank-prod
+    задаём топик app.kafka.topics.notifications,
 
-* Исправлены Helm-тесты.
+    подключаем spring.kafka.bootstrap-servers к EmbeddedKafka,
 
-* Для prod добавлен единый Ingress Gateway. Приложение доступно по адресу: http://localhost/bank.
+    отключаем реактивную security-автоконфигурацию.
 
-* К сожалению, не удалось корректно реализовать авторизацию пользователя и аутентификацию (получение токенов для микросервисов) Кейклок в K8s одновременно.
 
-Keycloak внутри контейнера работает на внутреннем hostname (hostname внутри pod'а), а внешние сервисы (браузер) обращаются к нему через внешний URL (Ingress/NodePort), из-за чего происходит несоответствие redirect_uri и issuer.
+Вызываем именно публичный метод deposit(...), (“не тестировать приватные методы”):
 
-OIDC Discovery (/.well-known/openid-configuration) отдает внутренние URL, типа: http://keycloak:8080/realms/bank, а браузер- по внешним URL, например: http://auth.localhost/realms/bank
+    вход: параметры accountId и amount,
 
-Keycloak запрещает авторизацию и выдает ошибки вида: Invalid redirect_uri, Issuer mismatch, Token validation failed.
+    результат: запись в Kafka-топике notifications.raw.
 
-- В настоящий момент найден один из путей реализации данной конфигурации приложения: использование частично динамических URL.
+2. Тест TransferControllerKafkaIT, исправлено:
 
-При этом: запускаем Keycloak с явным --hostname (наружный URL):
+Исключена рефлексия — не трогаем приватный метод sendNotification(...).
 
-    kc.sh start \
-    --hostname http://auth.localhost \
-    --proxy-headers xforwarded \
-    --http-enabled true \
-    --hostname-strict=true
+Тест привязан к публичному API контроллера transfer(@RequestBody TransferRequest request).
 
-тогда:
+Kafka-интеграция проверяется end-to-end через EmbeddedKafka.
 
-OIDC discovery (/.well-known/openid-configuration) всегда отдаёт issuer = http://auth.localhost/realms/bank,
+TransferService замокан — тест не зависит от бизнес-логики перевода и внешних HTTP-вызовов.
 
-все эндпоинты (auth, token, jwks) будут тоже на http://auth.localhost/....
+Security в тестовом контексте отключена через spring.autoconfigure.exclude и не мешает поднятию контекста.
 
-В связи с ограничением по времени, это решение пока не применено в проекте.
+3. Замечание: "сохраняешь сущность в БД (который repository.save), а в doOnSuccess отправляешь сообщение в Kafka. Если сообщение в Kafka не уйдет (сбой сети, брокер недоступен), у тебя в базе будет созданный аккаунт, но уведомление не отправится, и другие сервисы об этом не узнают".
 
+Исправление (на примере account-service):
 
-## Спринт 11 - Последовательность работы над приложением
+Для гарантии доставки события в сервисе account-service при создании нового счета пользователя применен паттерн Transactional Outbox.
 
-* внедрена платформа Apache Kafka для взаимодействия микросервисов;
+Псоле исправления, вместо того чтобы сразу слать сообщение в Kafka:
 
-* платформа Apache Kafka разворачивается в Kubernetes с использованием Helm-чартов;
+в одной БД-транзакции: сохраняем новый счет в Account и сохраняем Outbox-событие (которое нужно отправить в Kafka).
 
-* взаимодействия с сервисом Notifications не используют REST, обмен сообщениями осуществляется через соответствующий топик Apache Kafka;
+Отдельный компонент читает таблицу outbox и отправляет события в Kafka, помечая их как обработанные.
 
-* взаимодействие между сервисами Exchange и Exchange Generator не использует REST, обмен сообщениями осуществляется через соответствующий топик Apache Kafka;
+Т.е.: БД-коммит = и аккаунт, и запись в outbox.
 
-* написан Jenkinsfile для развёртывания/обновления платформы Apache Kafka, её конфигурации, топиков и т. д.;
+Если транзакция не закоммитилась — нет ни аккаунта, ни события.
 
-* доработан Jenkinsfile для всего зонтичного проекта: в него добавлена возможность развёртывания/обновления платформы Apache Kafka, её конфигурации, топиков и т. д.;
+Изменения:
 
-* Jenkinsfile применены в CI/CD Jenkins и хранятся в Git.
+* добавлена Outbox-сущность;
 
+* В БД bank создана схема/таблица outbox.outbox_events;
 
-## Пояснения в работе приложения
+* добавлен OutboxProcessor;
 
-Из сервиса exchange-generator убрана зависимость spring-boot-starter-webflux и добавлена зависимость spring-webflux, т.к. в сервисе есть есть компонент: WebClient webClient, а также вызов внешнего API: 
-webClient.get().uri(...).retrieve().
-
-
-WebClient находится именно в spring-webflux, без этой зависимости: WebClient не будет создан.
-
-
-В notification-service оставлен spring-boot-starter-webflux, т.к. сервис имеет REST endpoint и отдает уведомления в UI (Alert в Gateway). Поэтому WebFlux нужен как HTTP сервер.
-
-Если бы notification-service был только Kafka consumer, тогда: WebFlux Starter можно было удалить и оставить только spring-webflux (для JSON и reactive libs).
-
-В exchange-service также оставлен spring-boot-starter-webflux, т.к. сервис имеет REST endpoint и взаимодействует с accaunt-service.
-
-
-## Запуск приложения в работу локально:
-
-* запустить minikube: minikube start
-
-* пробросить порт 80 сервиса ingress-nginx-controller на локальную машину порт 80:
-    
-    kubectl port-forward svc/ingress-nginx-controller 80:80 -n ingress-nginx
-
-* обновить зависимости: helm dependency update helm-charts/bank-platform
-
-* запустить Helm: helm upgrade --install bank-platform helm-charts/bank-platform -f helm-charts/bank-platform/values.yaml
-
-
-## Запуск CI/CD Pipeline (Build → Test → Docker → Push → Deploy):
-
-    запустить и открыть Blue Ocean: http://jenkins:8080/blue
-
-    выбрать job -> нажать Run.
-
-* В результате в Blue Ocean прямо видно pipeline:
-
-зелёные шаги — success
-
-синие — running
-
-красные — fail
-
-    Blue Ocean:
-
-    - отображает pipeline
-
-    - визуализирует шаги
-
-    - показывает логи
-
-    - даёт кнопку "Run"
-
-    - показывает, какие стадии прошли
-
-## Результаты тестирования:
-
-notification-service:
-
-
-![notification](img/notificationTest.jpg)
-
-
-
-cash-service:
-
-
-![cash-service](img/cash-serviceTest.jpg)
-
-
-
-exchange-generator:
-
-
-![exchange-generator](img/exchange-generatorTest.jpg)
-
-
-
-exchange-service:
-
-
-![exchange-service](img/exchange-serviceTest.jpg)
-
-
-
-
-transfer-service:
-
-
-![transfer-service](img/transfer-serviceTest.jpg)
+* доработан AccountController.

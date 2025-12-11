@@ -13,7 +13,6 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.Map;
 
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;

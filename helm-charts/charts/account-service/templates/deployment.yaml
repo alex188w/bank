@@ -51,6 +51,10 @@ spec:
                   name: {{ index .Values "account-service" "secrets" "keycloakSecret" }}
                   key: client-secret
 
+          volumeMounts:
+            - name: config
+              mountPath: /app/config
+
           startupProbe:
             tcpSocket:
               port: 8082

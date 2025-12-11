@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   name: {{ include "account-service.fullname" . }}-config
 data:
-  application-k8s.yml: |
+  application.yml: |
     spring:
       application:
         name: account-service
@@ -15,10 +15,20 @@ data:
 
       security:
         oauth2:
+          resourceserver:
+            jwt:
+              issuer-uri: http://bank-platform-keycloak:8095/realms/bank
           client:
             registration:
-              account-client:
-                client-secret: "${KEYCLOAK_CLIENT_SECRET}"  # переменная подхватится из env
+              account-client:                # имя регистрации — любое, но одно и то же везде
+                provider: keycloak
+                client-id: account-service   # ВАЖНО: не пустой
+                client-secret: "${KEYCLOAK_CLIENT_SECRET}"
+                scope: openid, profile, email
+                authorization-grant-type: client_credentials
+            provider:
+              keycloak:
+                token-uri: http://bank-platform-keycloak:8095/realms/bank/protocol/openid-connect/token
 
       kafka:
         bootstrap-servers: {{ .Values.global.kafka.bootstrapServers | quote }}
