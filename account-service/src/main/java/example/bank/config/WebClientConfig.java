@@ -7,8 +7,13 @@ import org.springframework.security.oauth2.client.registration.ReactiveClientReg
 import org.springframework.security.oauth2.client.web.reactive.function.client.*;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import lombok.RequiredArgsConstructor;
+
 @Configuration
+@RequiredArgsConstructor
 public class WebClientConfig {
+
+    private final WebClient.Builder webClientBuilder;
 
     @Bean
     public WebClient cashWebClient(ReactiveClientRegistrationRepository clients,
@@ -18,7 +23,7 @@ public class WebClientConfig {
         var oauth2 = new ServerOAuth2AuthorizedClientExchangeFilterFunction(manager);
         oauth2.setDefaultClientRegistrationId("account-service-client");
 
-        return WebClient.builder()
+        return webClientBuilder
                 .baseUrl("http://bank-platform-cash-service:8083") // cash-service
                 .filter(oauth2)
                 .build();

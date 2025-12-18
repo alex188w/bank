@@ -29,10 +29,18 @@ spec:
                 secretKeyRef:
                   name: transfer-service-keycloak-secret
                   key: client-secret
-          volumeMounts:
+
           volumeMounts:
             - name: config
               mountPath: /app/config
+
+          resources:
+                requests:
+                  cpu: "100m"
+                  memory: "256Mi"
+                limits:
+                  cpu: "500m"
+                  memory: "512Mi"
 
           startupProbe:
             tcpSocket:

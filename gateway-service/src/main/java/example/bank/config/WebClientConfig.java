@@ -1,6 +1,6 @@
 package example.bank.config;
 
-import org.springframework.beans.factory.annotation.Qualifier;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -9,9 +9,13 @@ import org.springframework.security.oauth2.client.*;
 import org.springframework.security.oauth2.client.registration.ReactiveClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.reactive.function.client.ServerOAuth2AuthorizedClientExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
-// import org.springframework.cloud.client.loadbalancer.reactive.ReactorLoadBalancerExchangeFilterFunction;
+import brave.Tracer;
+import org.springframework.http.HttpHeaders;
+import org.springframework.web.reactive.function.client.ClientRequest;
+import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
+import brave.Tracer;
 
-import lombok.RequiredArgsConstructor;
+import io.micrometer.observation.ObservationRegistry;
 
 @Configuration
 @RequiredArgsConstructor
@@ -19,6 +23,13 @@ public class WebClientConfig {
 
         private final ReactiveClientRegistrationRepository clients;
         private final ReactiveOAuth2AuthorizedClientService authService;
+
+        // ВАЖНО: инжектим builder от Spring (он уже с tracing/metrics)
+        private final WebClient.Builder webClientBuilder;
+
+        private final ObservationRegistry observationRegistry;
+
+        private final Tracer tracer;
 
         @Value("${clients.account.base-url:http://bank-platform-account-service:8082}")
         private String accountBaseUrl;
@@ -35,47 +46,72 @@ public class WebClientConfig {
         @Value("${clients.notification.base-url:http://bank-platform-notification-service:8087}")
         private String notificationBaseUrl;
 
+        private ExchangeFilterFunction b3PropagationFilter(Tracer tracer) {
+                return (request, next) -> {
+                        var span = tracer.currentSpan();
+                        if (span == null)
+                                return next.exchange(request);
+
+                        var ctx = span.context();
+                        ClientRequest newReq = ClientRequest.from(request)
+                                        .headers(h -> {
+                                                h.set("X-B3-TraceId", ctx.traceIdString());
+                                                h.set("X-B3-SpanId", ctx.spanIdString());
+                                                if (ctx.parentIdString() != null) {
+                                                        h.set("X-B3-ParentSpanId", ctx.parentIdString());
+                                                }
+                                                h.set("X-B3-Sampled", "1");
+                                        })
+                                        .build();
+
+                        return next.exchange(newReq);
+                };
+        }
+
         private WebClient buildWebClient(String baseUrl, String clientRegistrationId) {
                 var manager = new AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager(clients, authService);
                 var oauth2 = new ServerOAuth2AuthorizedClientExchangeFilterFunction(manager);
                 oauth2.setDefaultClientRegistrationId(clientRegistrationId);
-
-                return WebClient.builder()
+                return webClientBuilder
+                                .clone()
+                                .observationRegistry(observationRegistry)
                                 .baseUrl(baseUrl)
+                                .filter(b3PropagationFilter(tracer))
                                 .filter(oauth2)
                                 .build();
         }
 
-        @Bean
-        @Primary // теперь действительно работает
+        @Bean("accountWebClient")
         public WebClient accountWebClient() {
                 return buildWebClient(accountBaseUrl, "gateway-client");
         }
 
-        @Bean
+        @Bean("cashWebClient")
         public WebClient cashWebClient() {
                 return buildWebClient(cashBaseUrl, "gateway-client");
         }
 
-        @Bean
+        @Bean("exchangeWebClient")
         public WebClient exchangeWebClient() {
                 return buildWebClient(exchangeBaseUrl, "gateway-client");
         }
 
-        @Bean
+        @Bean("transferWebClient")
         public WebClient transferWebClient() {
                 return buildWebClient(transferBaseUrl, "gateway-client");
         }
 
-        @Bean
+        @Bean("notificationWebClient")
         public WebClient notificationWebClient() {
-                return WebClient.builder()
-                                .baseUrl("http://bank-platform-notification-service:8087")
+                return webClientBuilder
+                                .clone()
+                                .observationRegistry(observationRegistry)
+                                .baseUrl(notificationBaseUrl)
                                 .build();
         }
 
         @Bean
         public WebClient keycloakWebClient() {
-                return WebClient.builder().build();
+                return webClientBuilder.clone().build();
         }
 }

@@ -106,50 +106,6 @@ public class AccountController {
         return repository.findById(id);
     }
 
-    // @PostMapping("/create")
-    // public Mono<Account> createAccount(@RequestBody Account account) {
-    //     if (account.getBalance() == null)
-    //         account.setBalance(BigDecimal.ZERO);
-    //     if (account.getOwnerId() == null)
-    //         account.setOwnerId(account.getUsername());
-
-    //     log.info("Создание аккаунта: {}", account);
-
-    //     return repository.save(account)
-    //             .flatMap(savedAccount -> sendNotification(savedAccount)
-    //                     .thenReturn(savedAccount));
-    // }
-
-    // private Mono<Void> sendNotification(Account account) {
-
-    //     String message = String.format(
-    //             "Создан счёт №%d%nВалюта: %s%nВладелец: %s",
-    //             account.getId(),
-    //             account.getCurrency() != null ? account.getCurrency() : "не указана",
-    //             account.getUsername());
-
-    //     Notification notification = new Notification(
-    //             "account_created",
-    //             account.getUsername(),
-    //             null,
-    //             null,
-    //             message,
-    //             account.getBalance(),
-    //             account.getId());
-
-    //     return Mono.fromFuture(
-    //             kafkaTemplate.send(
-    //                     notificationsTopic,
-    //                     String.valueOf(account.getId()),
-    //                     notification))
-    //             .doOnSuccess(result -> log.info("Отправлено уведомление в Kafka: topic={}, partition={}, offset={}",
-    //                     result.getRecordMetadata().topic(),
-    //                     result.getRecordMetadata().partition(),
-    //                     result.getRecordMetadata().offset()))
-    //             .doOnError(e -> log.error("Ошибка при отправке уведомления в Kafka", e))
-    //             .then();
-    // }
-
     @PostMapping("/{id}/deposit")
     public Mono<Void> deposit(@PathVariable Long id, @RequestParam BigDecimal amount) {
         log.info("Deposit request: id={}, amount={}", id, amount);

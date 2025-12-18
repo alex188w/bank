@@ -26,5 +26,11 @@ dependencies:
 - name: kaffka-service
   repository: file://../charts/kaffka-service
   version: 0.1.0
-digest: sha256:c460bb2978c407a7e307bb49270a953bd1559c39afdeb8859db2d05f79f0e3f7
-generated: "2025-12-07T13:17:39.7390126+05:00"
+- name: zipkin
+  repository: file://../charts/zipkin
+  version: 0.1.0
+- name: prometheus
+  repository: file://../charts/prometheus
+  version: 0.1.0
+digest: sha256:10944b8b9e7b87806ee125cb6d167fa816033773d5e318192ab103cade653024
+generated: "2025-12-17T15:08:22.4898268+05:00"

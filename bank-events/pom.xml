@@ -26,6 +26,18 @@
             <version>1.18.34</version>
             <scope>provided</scope>
         </dependency>
+
+        <!-- Micrometer Tracing bridge for Brave -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-tracing-bridge-brave</artifactId>
+        </dependency>
+
+        <!-- Zipkin reporter -->
+        <dependency>
+            <groupId>io.zipkin.reporter2</groupId>
+            <artifactId>zipkin-reporter-brave</artifactId>
+        </dependency>
      </dependencies>
      
     <build>

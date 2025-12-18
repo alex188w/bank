@@ -90,14 +90,30 @@ spring:
           filters:
             - StripPrefix=1
 
-server:
-  port: 8080
-
 management:
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: http://bank-platform-zipkin:9411/api/v2/spans
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: "health,info,prometheus"
+
+logging:
+  level:
+    zipkin2: DEBUG
+    zipkin2.reporter: DEBUG
+    brave: DEBUG
+    io.micrometer.tracing: DEBUG
+    org.springframework.boot.actuate.autoconfigure.tracing: DEBUG
+
+server:
+  port: 8080
+
+
 
 clients:
   account:
@@ -117,7 +133,3 @@ keycloak:
   client-id: gateway-service
   client-secret: "${KEYCLOAK_CLIENT_SECRET}"
 
-logging:
-  level:
-    org.springframework.web.reactive.function.client.ExchangeFunctions: DEBUG
-    org.springframework.security.oauth2.client: DEBUG

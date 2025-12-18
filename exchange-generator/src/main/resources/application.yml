@@ -2,16 +2,6 @@ spring:
   application:
     name: exchange-generator
 
-  main:
-    web-application-type: none
-    allow-bean-definition-overriding: true
-
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: http://192.168.0.140:8090/realms/bank
-
 app:
   kafka:
     topics:

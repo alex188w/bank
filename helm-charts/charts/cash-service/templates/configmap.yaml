@@ -25,6 +25,35 @@ data:
           properties:
             enable.idempotence: true
 
+    management:
+      observations:
+          enabled: true
+          include: 
+            - r2dbc.* 
+            - kafka.*  
+      tracing:
+        sampling:
+          probability: 1.0
+        propagation:
+          type: B3,W3C
+        baggage:
+          remote-fields:
+            - env
+          correlation:
+            fields:
+              - env
+      endpoints:
+        web:
+          exposure:
+            include: health,info,prometheus
+      endpoint:
+        prometheus:
+          enabled: true
+
+      zipkin:
+        tracing:
+          endpoint: http://bank-platform-zipkin:9411/api/v2/spans
+
     app:
       kafka:
         topics:
@@ -33,9 +62,3 @@ data:
     server:
       port: 8083
 
-    management:
-      health:
-        db:
-          enabled: false
-        r2dbc:
-          enabled: false

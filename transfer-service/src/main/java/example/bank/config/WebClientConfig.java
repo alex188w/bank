@@ -8,9 +8,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 public class WebClientConfig {
 
     @Bean
-    public WebClient accountWebClient(WebClient.Builder builder) {
-        return builder
-                .baseUrl("http://bank-platform-account-service:8082") // account-service
-                .build();
+    public WebClient webClient(WebClient.Builder builder) {
+        // builder от Spring Boot уже включает observation/tracing
+        return builder.build();
     }
 }

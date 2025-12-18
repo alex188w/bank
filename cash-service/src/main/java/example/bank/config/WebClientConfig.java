@@ -8,8 +8,13 @@ import org.springframework.security.oauth2.client.registration.ReactiveClientReg
 import org.springframework.security.oauth2.client.web.reactive.function.client.ServerOAuth2AuthorizedClientExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import lombok.RequiredArgsConstructor;
+
 @Configuration
+@RequiredArgsConstructor
 public class WebClientConfig {
+
+    private final WebClient.Builder webClientBuilder;
 
     @Bean
     public WebClient accountWebClient(ReactiveClientRegistrationRepository clients,
@@ -19,25 +24,9 @@ public class WebClientConfig {
         var oauth2 = new ServerOAuth2AuthorizedClientExchangeFilterFunction(manager);
         oauth2.setDefaultClientRegistrationId("cash-service-client");
 
-        return WebClient.builder()
+        return webClientBuilder
                 .baseUrl("http://bank-platform-account-service:8082")
                 .filter(oauth2)
                 .build();
     }
-
-    // @Bean
-    // public WebClient accountWebClient() {
-    //     return WebClient.builder()
-    //             .baseUrl("http://bank-platform-account-service:8082") // для настройки без OAuth2AuthorizedClientManager account-service
-    //             .build();
-    // }
-
-    // @Bean
-    // public WebClient notificationWebClient() {
-    // // без OAuth2, просто прямое соединение
-    // return WebClient.builder()
-    // .baseUrl("http://bank-platform-notification-service:8087") //
-    // notification-service
-    // .build();
-    // }
 }

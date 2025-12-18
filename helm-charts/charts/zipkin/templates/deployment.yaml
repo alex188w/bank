@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "zipkin.fullname" . }}
+  labels:
+    app: {{ include "zipkin.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "zipkin.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "zipkin.name" . }}
+    spec:
+      containers:
+        - name: zipkin
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: 9411
+          env:
+            - name: STORAGE_TYPE
+              value: "{{ .Values.env.STORAGE_TYPE }}"
+          resources:
+                requests:
+                  cpu: "100m"
+                  memory: "256Mi"
+                limits:
+                  cpu: "500m"
+                  memory: "512Mi"

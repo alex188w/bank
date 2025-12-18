@@ -13,10 +13,43 @@ data:
 
       kafka:
         bootstrap-servers: {{ .Values.global.kafka.bootstrapServers | quote }}
-        streams:
-          application-id: notification-service-streams
+        consumer:
+          group-id: notification-service
+          key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+          value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
           properties:
             spring.json.trusted.packages: "example.bank"
+        listener:
+          ack-mode: RECORD
+
+    management:
+      observations:
+          enabled: true
+          include: 
+            - r2dbc.* 
+            - kafka.*  
+      tracing:
+        sampling:
+          probability: 1.0
+        propagation:
+          type: B3,W3C
+        baggage:
+          remote-fields:
+            - env
+          correlation:
+            fields:
+              - env
+      endpoints:
+        web:
+          exposure:
+            include: health,info,prometheus
+      endpoint:
+        prometheus:
+          enabled: true
+
+      zipkin:
+        tracing:
+          endpoint: http://bank-platform-zipkin:9411/api/v2/spans
 
     app:
       kafka:
@@ -26,8 +59,4 @@ data:
     server:
       port: 8087
 
-    management:
-      endpoints:
-        web:
-          exposure:
-            include: health,info
+

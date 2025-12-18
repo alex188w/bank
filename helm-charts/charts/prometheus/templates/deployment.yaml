@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "prometheus.fullname" . }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "prometheus.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "prometheus.name" . }}
+    spec:
+      containers:
+      - name: prometheus
+        image: prom/prometheus:v2.45.0
+        args:
+          - '--config.file=/etc/prometheus/prometheus.yml'
+          - '--storage.tsdb.path=/prometheus'
+          - '--web.console.templates=/etc/prometheus/consoles'
+          - '--web.console.libraries=/etc/prometheus/console_libraries'
+          # Ключевые аргументы для работы за префиксом:
+          - '--web.external-url=http://localhost/prometheus'
+          - '--web.route-prefix=/prometheus'
+          - '--web.enable-lifecycle'
+        volumeMounts:
+        - name: config
+          mountPath: /etc/prometheus
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "prometheus.fullname" . }}-config

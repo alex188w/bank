@@ -1,14 +1,17 @@
 package example.bank.service;
 
+import java.math.BigDecimal;
+import java.util.Map;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+
 import reactor.core.publisher.Mono;
-import java.math.BigDecimal;
-import java.util.Map;
 
 @Slf4j
 @Service
@@ -16,6 +19,15 @@ import java.util.Map;
 public class TransferService {
 
     private final WebClient webClient;
+
+    @Value("${clients.account.baseUrl}")
+    private String account_baseUrl;
+
+    @Value("${clients.withdraw.baseUrl}")
+    private String withdraw_baseUrl;
+
+    @Value("${clients.deposit.baseUrl}")
+    private String deposit_baseUrl;
 
     public Mono<Void> transfer(String fromUsername, Long fromId, String toUsername, Long toId, BigDecimal amount) {
         return getAccount(fromId)
@@ -36,7 +48,7 @@ public class TransferService {
 
     private Mono<Map<String, Object>> getAccount(Long id) {
         return webClient.get()
-                .uri("http://bank-platform-account-service:8082/accounts/{id}", id)
+                .uri(account_baseUrl, id)
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {
                 })
@@ -45,14 +57,14 @@ public class TransferService {
 
     private Mono<Void> withdraw(Long id, BigDecimal amount) {
         return webClient.post()
-                .uri("http://bank-platform-account-service:8082/accounts/{id}/withdraw?amount={amount}", id, amount)
+                .uri(withdraw_baseUrl, id, amount)
                 .retrieve()
                 .bodyToMono(Void.class);
     }
 
     private Mono<Void> deposit(Long id, BigDecimal amount) {
         return webClient.post()
-                .uri("http://bank-platform-account-service:8082/accounts/{id}/deposit?amount={amount}", id, amount)
+                .uri(deposit_baseUrl, id, amount)
                 .retrieve()
                 .bodyToMono(Void.class);
     }

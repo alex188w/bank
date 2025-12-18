@@ -3,28 +3,63 @@ kind: ConfigMap
 metadata:
   name: {{ include "gateway-service.fullname" . }}-config
 data:
-  application-k8s.yml: |
+  application.yml: |
+    app:
+      env: {{ .Values.global.env | default "dev" | quote }}
     spring:
       application:
         name: gateway-service
 
-      url: "r2dbc:postgresql://bank-platform-postgres:5432/bank?currentSchema=users"
+      r2dbc:
+        url: "r2dbc:postgresql://bank-platform-postgres:5432/bank?currentSchema=users"
         username: "${SPRING_R2DBC_USERNAME}"
         password: "${SPRING_R2DBC_PASSWORD}"
+        pool:
+          enabled: true
 
       security:
         oauth2:
           client:
             registration:
               gateway-client:
-                client-secret: "${KEYCLOAK_CLIENT_SECRET}"  # переменная подхватится из env
-
-      server:
-        port: 8080
+                client-id: gateway-service
+                client-secret: "${KEYCLOAK_CLIENT_SECRET}"
+                authorization-grant-type: client_credentials
+                scope: openid, profile, email
+            provider:
+              keycloak:
+                token-uri: http://bank-platform-keycloak:8095/realms/bank/protocol/openid-connect/token
 
     management:
-      health:
-        db:
-          enabled: false
-        r2dbc:
-          enabled: false
+      observations:
+          enabled: true
+          include: 
+            - r2dbc.* 
+            - kafka.*  
+      tracing:
+        sampling:
+          probability: 1.0
+        propagation:
+          type: B3,W3C
+        baggage:
+          remote-fields:
+            - env
+          correlation:
+            fields:
+              - env
+      endpoints:
+        web:
+          exposure:
+            include: health,info,prometheus
+      endpoint:
+        prometheus:
+          enabled: true
+
+      zipkin:
+        tracing:
+          endpoint: http://bank-platform-zipkin:9411/api/v2/spans
+
+    server:
+      port: 8080
+
+

@@ -21,6 +21,16 @@ spring:
             keycloak:
               token-uri: http://192.168.0.140:8090/realms/bank/protocol/openid-connect/token
 
+clients:
+  account:
+    baseUrl: http://bank-platform-account-service:8082/accounts/{id}
+  withdraw:
+    baseUrl: http://bank-platform-account-service:8082/accounts/{id}/withdraw?amount={amount}
+  deposit:
+    baseUrl: http://bank-platform-account-service:8082/accounts/{id}/deposit?amount={amount}
+  
+  
+
 app:
   kafka:
     topics:

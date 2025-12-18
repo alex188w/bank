@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 
@@ -27,10 +28,10 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class ProxyController {
 
-        private final WebClient accountWebClient;
-        private final WebClient cashWebClient;
-        private final WebClient exchangeWebClient;
-        private final WebClient notificationWebClient;
+        private final @Qualifier("accountWebClient") WebClient accountWebClient;
+        private final @Qualifier("cashWebClient") WebClient cashWebClient;
+        private final @Qualifier("exchangeWebClient") WebClient exchangeWebClient;
+        private final @Qualifier("notificationWebClient") WebClient notificationWebClient;
 
         // Проксируем accounts
         @GetMapping("/accounts")
@@ -109,25 +110,11 @@ public class ProxyController {
                 return Map.of("name", username);
         }
 
-        // @GetMapping("/notifications/stream")
-        // public Flux<String> proxyStream() {
-        // log.info("========= Загружаем notifications =========");
-        // return notificationWebClient.get()
-        // .uri("/notifications/stream")
-        // .accept(MediaType.TEXT_EVENT_STREAM)
-        // .retrieve()
-        // .bodyToFlux(String.class);
-        // }
-
         @GetMapping(value = "/notifications/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
         public Flux<String> proxyStream() {
                 log.info("========= Загружаем notifications =========");
 
-                WebClient webClient = WebClient.builder()
-                                .baseUrl("http://bank-platform-notification-service:8087")
-                                .build();
-
-                return webClient.get()
+                return notificationWebClient.get()
                                 .uri("/notifications/stream")
                                 .accept(MediaType.TEXT_EVENT_STREAM)
                                 .retrieve()

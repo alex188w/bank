@@ -8,10 +8,6 @@ data:
       application:
         name: exchange-generator
 
-      main:
-        web-application-type: none
-        allow-bean-definition-overriding: true
-
       kafka:
         bootstrap-servers: {{ .Values.global.kafka.bootstrapServers | quote }}
         producer:
@@ -20,7 +16,40 @@ data:
           acks: all
           retries: 5
           properties:
+            interceptor.classes: io.micrometer.tracing.kafka.KafkaTracingProducerInterceptor
             enable.idempotence: true
+
+    management:
+      observations:
+          enabled: true
+          include: 
+            - r2dbc.* 
+            - kafka.*  
+      tracing:
+        sampling:
+          probability: 1.0
+        propagation:
+          type: B3,W3C
+        baggage:
+          remote-fields:
+            - env
+          correlation:
+            fields:
+              - env
+      endpoints:
+        web:
+          exposure:
+            include: health,info,prometheus
+      endpoint:
+        prometheus:
+          enabled: true
+        health:
+          probes:
+            enabled: false
+
+      zipkin:
+        tracing:
+          endpoint: http://bank-platform-zipkin:9411/api/v2/spans
 
     app:
       kafka:
@@ -34,8 +63,5 @@ data:
     server:
       port: 8085
 
-    management:
-      endpoints:
-        web:
-          exposure:
-            include: health,info
+
+

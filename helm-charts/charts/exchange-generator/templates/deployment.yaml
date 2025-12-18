@@ -27,27 +27,30 @@ spec:
             - name: config
               mountPath: /app/config
 
-      volumes:
-        - name: config
-          configMap:
-            name: {{ include "exchange-generator.fullname" . }}-config
+          resources:
+                requests:
+                  cpu: "100m"
+                  memory: "256Mi"
+                limits:
+                  cpu: "500m"
+                  memory: "512Mi"
 
           startupProbe:
-            tcpSocket:
-              port: 8085
+            exec:
+              command: ["sh","-c","ps -o comm= -p 1 | grep -qi java"]
             failureThreshold: 30
             periodSeconds: 5
-            
+
           livenessProbe:
-            tcpSocket:
-              port: 8085
+            exec:
+              command: ["sh","-c","ps -o comm= -p 1 | grep -qi java"]
             initialDelaySeconds: 30
             periodSeconds: 10
-            
+
           readinessProbe:
-            tcpSocket:
-              port: 8085
-            initialDelaySeconds: 15
+            exec:
+              command: ["sh","-c","ps -o comm= -p 1 | grep -qi java"]
+            initialDelaySeconds: 5
             periodSeconds: 5
 
       volumes:

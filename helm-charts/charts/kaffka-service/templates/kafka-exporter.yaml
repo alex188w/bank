@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kaffka-service.fullname" . }}-exporter
+  labels:
+    app: {{ include "kaffka-service.fullname" . }}-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "kaffka-service.fullname" . }}-exporter
+  template:
+    metadata:
+      labels:
+        app: {{ include "kaffka-service.fullname" . }}-exporter
+    spec:
+      containers:
+        - name: kafka-exporter
+          image: danielqsj/kafka-exporter:v1.7.0
+          args:
+            - "--kafka.server={{ include "kaffka-service.fullname" . }}:9092"
+          ports:
+            - name: metrics
+              containerPort: 9308
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "kaffka-service.fullname" . }}-exporter
+  labels:
+    app: {{ include "kaffka-service.fullname" . }}-exporter
+spec:
+  type: ClusterIP
+  ports:
+    - name: metrics
+      port: 9308
+      targetPort: 9308
+  selector:
+    app: {{ include "kaffka-service.fullname" . }}-exporter
