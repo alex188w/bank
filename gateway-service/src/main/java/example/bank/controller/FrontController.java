@@ -158,18 +158,18 @@ public class FrontController {
         }
 
         // имя пользователя (из Keycloak)
-        @GetMapping("/api/user")
-        @ResponseBody
-        public Mono<Map<String, String>> getUser(@AuthenticationPrincipal Mono<OAuth2User> userMono) {
-                return userMono
-                                .map(user -> {
-                                        String username = user.getAttribute("preferred_username");
-                                        if (username == null)
-                                                username = user.getName();
-                                        return Map.of("name", username);
-                                })
-                                .defaultIfEmpty(Map.of("name", "Guest"));
-        }
+        // @GetMapping("/api/user")
+        // @ResponseBody
+        // public Mono<Map<String, String>> getUser(@AuthenticationPrincipal Mono<OAuth2User> userMono) {
+        //         return userMono
+        //                         .map(user -> {
+        //                                 String username = user.getAttribute("preferred_username");
+        //                                 if (username == null)
+        //                                         username = user.getName();
+        //                                 return Map.of("name", username);
+        //                         })
+        //                         .defaultIfEmpty(Map.of("name", "Guest"));
+        // }
 
         @PostMapping("/transfer")
         public Mono<RedirectView> transfer(@AuthenticationPrincipal OidcUser oidcUser,

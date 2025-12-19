@@ -2,12 +2,14 @@ package example.bank.controller;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import reactor.core.publisher.Flux;
 import example.bank.service.NotificationService;
 import example.bank.Notification;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 
 @Slf4j
 @RestController
@@ -19,8 +21,6 @@ public class NotificationController {
 
     @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<Notification> stream() {
-        log.info("Клиент подключился к потоку уведомлений");
-        return notificationService.streamNotifications()
-                .doOnNext(n -> log.info("Отправка уведомления в SSE: {}", n));
+        return notificationService.streamNotifications();
     }
 }

@@ -15,7 +15,7 @@ spec:
             name: bank-platform-zipkin
             port:
               number: 9411
-      paths:
+
       - path: /prometheus
         pathType: Prefix
         backend:
@@ -23,6 +23,7 @@ spec:
             name: bank-platform-prometheus
             port:
               number: 9090
+
       - path: /bank
         pathType: Prefix
         backend:
@@ -30,10 +31,28 @@ spec:
             name: bank-platform-gateway-service
             port:
               number: 8080
-      # - path: /
-      #   pathType: Prefix
-      #   backend:
-      #     service:
-      #       name: bank-platform-gateway-service
-      #       port:
-      #         number: 8080     
+
+      # OAuth2 редиректы идут без /bank, поэтому прокидываем /oauth2 на gateway
+      - path: /oauth2
+        pathType: Prefix
+        backend:
+          service:
+            name: bank-platform-gateway-service
+            port:
+              number: 8080
+
+      # зависит от конфигурации security
+      - path: /login
+        pathType: Prefix
+        backend:
+          service:
+            name: bank-platform-gateway-service
+            port:
+              number: 8080
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: bank-platform-gateway-service
+            port:
+              number: 8080     

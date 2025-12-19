@@ -51,6 +51,13 @@ data:
         tracing:
           endpoint: http://bank-platform-zipkin:9411/api/v2/spans
 
+      metrics:
+          distribution:
+            percentiles-histogram:
+              http.server.requests: true
+            percentiles:
+              http.server.requests: 0.5,0.95,0.99
+
     app:
       kafka:
         topics:

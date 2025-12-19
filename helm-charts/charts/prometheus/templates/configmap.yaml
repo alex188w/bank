@@ -48,12 +48,12 @@ data:
               sum(rate(http_server_requests_seconds_count{status=~"5.."}[2m]))
               /
               sum(rate(http_server_requests_seconds_count[2m])) > 0.02
-            for: 2m
+            for: 5m
             labels:
               severity: warning
             annotations:
               summary: "Высокая доля 5xx"
-              description: "Доля 5xx > 2% в течение 2 минут"
+              description: "Доля 5xx > 2% в течение 5 минут"
 
           - alert: HighLatencyP95
             expr: |
@@ -66,3 +66,21 @@ data:
             annotations:
               summary: "Высокая задержка p95"
               description: "p95 по HTTP > 1s в течение 5 минут"
+
+          - alert: HighWithdrawFailures
+            expr: sum(rate(account_withdraw_total{result="failure"}[5m])) > 0
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Ошибки снятия средств"
+              description: "Есть неуспешные withdraw в течение 5 минут"
+
+          - alert: ExchangeRatesStale
+            expr: (time() - exchange_rates_last_success_timestamp_seconds) > 180
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Курсы валют не обновляются"
+              description: "Нет успешного обновления курсов валют более 3 минут"

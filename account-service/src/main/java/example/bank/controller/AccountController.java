@@ -4,6 +4,8 @@ import example.bank.Notification;
 import example.bank.model.Account;
 import example.bank.model.OutboxEvent;
 import example.bank.service.AccountService;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import example.bank.repository.AccountRepository;
 import example.bank.repository.OutboxEventRepository;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +14,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 
 import org.springframework.http.MediaType;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,8 +34,25 @@ public class AccountController {
     private final AccountRepository repository;
     private final AccountService service;
     private final OutboxEventRepository outboxRepository;
+    private final MeterRegistry meterRegistry;
 
     private final ObjectMapper objectMapper; // для сериализации Notification в JSON
+
+    private Mono<String> currentLogin() {
+        return ReactiveSecurityContextHolder.getContext()
+                .map(ctx -> ctx.getAuthentication())
+                .map(auth -> auth != null ? auth.getName() : "unknown")
+                .defaultIfEmpty("unknown");
+    }
+
+    private void inc(String metric, String result, String login, String accountId) {
+        Counter.builder(metric)
+                .tag("result", result)
+                .tag("login", login)
+                .tag("account_id", accountId)
+                .register(meterRegistry)
+                .increment();
+    }
 
     @PostMapping("/create")
     @Transactional
@@ -67,8 +87,7 @@ public class AccountController {
                 "ACCOUNT_CREATED",
                 payloadJson,
                 Instant.now(),
-                false
-        );
+                false);
 
         return outboxRepository.save(event);
     }
@@ -109,12 +128,20 @@ public class AccountController {
     @PostMapping("/{id}/deposit")
     public Mono<Void> deposit(@PathVariable Long id, @RequestParam BigDecimal amount) {
         log.info("Deposit request: id={}, amount={}", id, amount);
-        return service.deposit(id, amount);
+
+        return currentLogin()
+                .flatMap(login -> service.deposit(id, amount)
+                        .doOnSuccess(v -> inc("account_deposit_total", "success", login, String.valueOf(id)))
+                        .doOnError(e -> inc("account_deposit_total", "failure", login, String.valueOf(id))));
     }
 
     @PostMapping("/{id}/withdraw")
     public Mono<Void> withdraw(@PathVariable Long id, @RequestParam BigDecimal amount) {
         log.info("Withdraw request: id={}, amount={}", id, amount);
-        return service.withdraw(id, amount);
+
+        return currentLogin()
+                .flatMap(login -> service.withdraw(id, amount)
+                        .doOnSuccess(v -> inc("account_withdraw_total", "success", login, String.valueOf(id)))
+                        .doOnError(e -> inc("account_withdraw_total", "failure", login, String.valueOf(id))));
     }
 }
