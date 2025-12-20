@@ -62,6 +62,10 @@ data:
       kafka:
         topics:
           notifications: notifications.raw
+      notifications:
+        simulate-failure:
+          enabled: true
+          probability: 0.1   # 10% "недоставок"
 
     server:
       port: 8087

@@ -47,7 +47,7 @@ dependencies:
   - name: kaffka-service
     version: 0.1.0
     repository: "file://../charts/kaffka-service"
-    condition: kaffkaService.enabled
+    condition: kaffka-service.enabled
 
   - name: zipkin
     version: 0.1.0
@@ -58,5 +58,10 @@ dependencies:
     version: 0.1.0
     repository: "file://../charts/prometheus"  
     condition: prometheus.enabled 
+
+  - name: grafana
+    version: 0.1.0
+    repository: file://../charts/grafana
+    condition: grafana.enabled
 
 

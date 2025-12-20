@@ -61,3 +61,41 @@ Security в тестовом контексте отключена через sp
 * добавлен OutboxProcessor;
 
 * доработан AccountController.
+
+
+
+## Скрины работы приложения:
+
+Zipkin Dependencies
+
+![Grafana allerting](img/zipkin_dependencis.jpg)
+
+Zipkin Transfer
+
+![Grafana allerting](img/zipkin_transfer.jpg)
+
+Prometheus
+
+![Grafana allerting](img/prometheus.jpg)
+
+Grafana DashBoard 1
+
+![Grafana DashBoard](img/ghrafana_busines.jpg)
+
+Grafana DashBoard 2
+
+![Grafana DashBoard](img/http_metrics.jpg)
+
+Grafana DashBoard 3
+
+![Grafana DashBoard](img/JVM_metrics.jpg)
+
+Grafana allerting
+
+![Grafana allerting](img/allerting.jpg)
+
+
+
+
+
+

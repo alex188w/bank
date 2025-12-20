@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bank-platform-grafana-dashboards
+  labels:
+    grafana_dashboard: "1"
+data:
+  http.json: |-
+    {{ .Files.Get "dashboards/http.json" | nindent 4 }}
+  jvm.json: |-
+    {{ .Files.Get "dashboards/jvm.json" | nindent 4 }}
+  business.json: |-
+    {{ .Files.Get "dashboards/busines.json" | nindent 4 }}
+      

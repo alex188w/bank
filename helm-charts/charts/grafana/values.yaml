@@ -1,0 +1,82 @@
+grafana:
+  adminUser: admin
+  adminPassword: admin
+
+  rbac:
+    create: false
+  serviceAccount:
+    create: false
+    name: default
+
+  sidecar:
+    dashboards:
+      enabled: true
+    datasources:
+      enabled: true
+
+  service:
+    type: ClusterIP
+    port: 3000
+
+  ingress:
+    enabled: false
+
+  grafana.ini:
+    server:
+      root_url: http://localhost/grafana
+      serve_from_sub_path: true
+
+  # ingress:
+  #   enabled: true
+  #   ingressClassName: nginx
+  #   hosts:
+  #     - localhost
+  #   path: /grafana
+  #   pathType: Prefix
+  #   annotations:
+  #     nginx.ingress.kubernetes.io/rewrite-target: /$2
+  #     nginx.ingress.kubernetes.io/use-regex: "true"
+  #   # regex: /grafana(/|$)(.*)
+  #   # но chart grafana ожидает другой формат — ниже вариант через extraPaths:
+  #   extraPaths:
+  #     - path: /grafana(/|$)(.*)
+  #       pathType: ImplementationSpecific
+  #       backend:
+  #         service:
+  #           name: bank-platform-grafana
+  #           port:
+  #             number: 3000
+
+  grafana.ini:
+    server:
+      root_url: http://localhost/grafana
+      serve_from_sub_path: true
+
+  # Datasource provisioning
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        - name: Prometheus
+          uid: DS_PROMETHEUS
+          type: prometheus
+          access: proxy
+          url: http://bank-platform-prometheus:9090/prometheus
+          isDefault: true
+
+  # Dashboard provisioning
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: bank
+          orgId: 1
+          folder: Bank Platform
+          type: file
+          options:
+            path: /var/lib/grafana/dashboards/bank
+
+  dashboardsConfigMaps:
+    bank: bank-platform-grafana-dashboards
+
+

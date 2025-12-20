@@ -49,6 +49,13 @@ spec:
             name: bank-platform-gateway-service
             port:
               number: 8080
+      - path: /grafana
+        pathType: Prefix
+        backend:
+          service:
+            name: bank-platform-grafana
+            port:
+              number: 3000
       - path: /
         pathType: Prefix
         backend:

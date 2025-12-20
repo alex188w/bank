@@ -26,7 +26,7 @@ data:
           # брать только pods, у которых есть label app 
           - source_labels: [__meta_kubernetes_pod_label_app]
             action: drop
-            regex: (bank-platform-postgres|postgres|kaffka-service|prometheus|.*-exporter)
+            regex: (bank-platform-postgres|postgres|kaffka-service|prometheus|grafana|.*-exporter)
 
           - action: labelmap
             regex: __meta_kubernetes_pod_label_(.+)
@@ -84,3 +84,21 @@ data:
             annotations:
               summary: "Курсы валют не обновляются"
               description: "Нет успешного обновления курсов валют более 3 минут"
+
+          - alert: TransferFailures
+            expr: sum(increase(transfer_total{result="failure"}[5m])) > 0
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Ошибки переводов"
+              description: "Есть неуспешные переводы за последние 5 минут"
+
+          - alert: NotificationDeliveryFailures
+            expr: sum(increase(notification_sse_send_total{result="failure"}[5m])) > 0
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Недоставка уведомлений"
+              description: "Есть ошибки доставки уведомлений по SSE за последние 5 минут"
