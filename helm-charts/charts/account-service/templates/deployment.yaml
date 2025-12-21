@@ -51,6 +51,13 @@ spec:
                   name: {{ index .Values "account-service" "secrets" "keycloakSecret" }}
                   key: client-secret
 
+            - name: ENV
+              value: {{ .Values.global.env | quote }}
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: {{ .Values.global.kafka.bootstrapServers | quote }}
+            - name: KAFKA_LOG_TOPIC
+              value: "bank-platform-logs"
+
           volumeMounts:
             - name: config
               mountPath: /app/config
@@ -66,8 +73,8 @@ spec:
           startupProbe:
             tcpSocket:
               port: 8082
-            failureThreshold: 30
-            periodSeconds: 5
+            failureThreshold: 50
+            periodSeconds: 15
             
           livenessProbe:
             tcpSocket:

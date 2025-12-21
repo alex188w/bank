@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Map;
 
 import org.springframework.http.MediaType;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
@@ -35,8 +36,9 @@ public class AccountController {
     private final AccountService service;
     private final OutboxEventRepository outboxRepository;
     private final MeterRegistry meterRegistry;
+    private final ObjectMapper objectMapper;
 
-    private final ObjectMapper objectMapper; // для сериализации Notification в JSON
+    private final KafkaJsonLogger kafkaJsonLogger;
 
     private Mono<String> currentLogin() {
         return ReactiveSecurityContextHolder.getContext()
@@ -62,11 +64,28 @@ public class AccountController {
         if (account.getOwnerId() == null)
             account.setOwnerId(account.getUsername());
 
+        // обычный лог в консоль — ок
         log.info("Создание аккаунта: {}", account);
 
-        return repository.save(account)
-                .flatMap(savedAccount -> createOutboxEvent(savedAccount)
-                        .thenReturn(savedAccount));
+        return currentLogin()
+                .flatMap(login -> repository.save(account)
+                        .flatMap(savedAccount -> createOutboxEvent(savedAccount)
+                                .then(Mono.fromRunnable(() -> kafkaJsonLogger.info(
+                                        "account.create",
+                                        login,
+                                        String.valueOf(savedAccount.getId()),
+                                        Map.of(
+                                                "currency", savedAccount.getCurrency(),
+                                                "balance", savedAccount.getBalance(),
+                                                "username", savedAccount.getUsername(),
+                                                "result", "success"))))
+                                .thenReturn(savedAccount))
+                        .doOnError(ex -> kafkaJsonLogger.error(
+                                "account.create",
+                                login,
+                                null,
+                                ex,
+                                Map.of("result", "failure"))));
     }
 
     private Mono<OutboxEvent> createOutboxEvent(Account account) {
@@ -76,7 +95,6 @@ public class AccountController {
         try {
             payloadJson = objectMapper.writeValueAsString(notification);
         } catch (JsonProcessingException e) {
-            // Если не можем сериализовать — лучше вообще откатить транзакцию
             return Mono.error(e);
         }
 
@@ -113,16 +131,18 @@ public class AccountController {
     public Flux<Account> getAccounts(@RequestParam(required = false) String username) {
         if (username != null) {
             log.info("Запрос счетов пользователя: {}", username);
-            return repository.findByUsername(username);
+
+            return currentLogin()
+                    .doOnNext(login -> kafkaJsonLogger.info(
+                            "account.list",
+                            login,
+                            null,
+                            Map.of("username", username)))
+                    .thenMany(repository.findByUsername(username));
         } else {
             log.info("Запрос всех счетов");
             return Flux.empty();
         }
-    }
-
-    @GetMapping("/{id}")
-    public Mono<Account> getById(@PathVariable Long id) {
-        return repository.findById(id);
     }
 
     @PostMapping("/{id}/deposit")
@@ -131,8 +151,27 @@ public class AccountController {
 
         return currentLogin()
                 .flatMap(login -> service.deposit(id, amount)
-                        .doOnSuccess(v -> inc("account_deposit_total", "success", login, String.valueOf(id)))
-                        .doOnError(e -> inc("account_deposit_total", "failure", login, String.valueOf(id))));
+                        .doOnSuccess(v -> {
+                            inc("account_deposit_total", "success", login, String.valueOf(id));
+                            kafkaJsonLogger.info(
+                                    "account.deposit",
+                                    login,
+                                    String.valueOf(id),
+                                    Map.of(
+                                            "amount", amount,
+                                            "result", "success"));
+                        })
+                        .doOnError(ex -> {
+                            inc("account_deposit_total", "failure", login, String.valueOf(id));
+                            kafkaJsonLogger.error(
+                                    "account.deposit",
+                                    login,
+                                    String.valueOf(id),
+                                    ex,
+                                    Map.of(
+                                            "amount", amount,
+                                            "result", "failure"));
+                        }));
     }
 
     @PostMapping("/{id}/withdraw")
@@ -141,7 +180,26 @@ public class AccountController {
 
         return currentLogin()
                 .flatMap(login -> service.withdraw(id, amount)
-                        .doOnSuccess(v -> inc("account_withdraw_total", "success", login, String.valueOf(id)))
-                        .doOnError(e -> inc("account_withdraw_total", "failure", login, String.valueOf(id))));
+                        .doOnSuccess(v -> {
+                            inc("account_withdraw_total", "success", login, String.valueOf(id));
+                            kafkaJsonLogger.info(
+                                    "account.withdraw",
+                                    login,
+                                    String.valueOf(id),
+                                    Map.of(
+                                            "amount", amount,
+                                            "result", "success"));
+                        })
+                        .doOnError(ex -> {
+                            inc("account_withdraw_total", "failure", login, String.valueOf(id));
+                            kafkaJsonLogger.error(
+                                    "account.withdraw",
+                                    login,
+                                    String.valueOf(id),
+                                    ex,
+                                    Map.of(
+                                            "amount", amount,
+                                            "result", "failure"));
+                        }));
     }
 }

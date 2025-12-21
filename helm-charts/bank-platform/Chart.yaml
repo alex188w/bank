@@ -64,4 +64,10 @@ dependencies:
     repository: file://../charts/grafana
     condition: grafana.enabled
 
+  - name: elk
+    version: 0.1.0
+    repository: "file://../charts/elk"
+    condition: elk.enabled
+
+
 

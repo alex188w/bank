@@ -56,6 +56,13 @@ spec:
             name: bank-platform-grafana
             port:
               number: 3000
+      - path: /kibana
+        pathType: Prefix
+        backend:
+          service:
+            name: bank-platform-kibana
+            port:
+              number: 5601
       - path: /
         pathType: Prefix
         backend:

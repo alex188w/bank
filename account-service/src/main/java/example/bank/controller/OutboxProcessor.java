@@ -7,6 +7,7 @@ import jakarta.annotation.PostConstruct;
 import example.bank.repository.OutboxEventRepository;
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -23,7 +24,7 @@ import java.time.Duration;
 public class OutboxProcessor {
 
     private final OutboxEventRepository outboxRepository;
-    private final KafkaTemplate<String, Notification> kafkaTemplate;
+    private final @Qualifier("notificationKafkaTemplate") KafkaTemplate<String, Notification> kafkaTemplate;
 
     @Value("${app.kafka.topics.notifications}")
     private String notificationsTopic;

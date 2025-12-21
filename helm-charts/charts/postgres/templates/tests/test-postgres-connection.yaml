@@ -6,17 +6,14 @@ spec:
   restartPolicy: Never
   containers:
   - name: test
-    image: busybox:1.35
+    image: postgres:15-alpine
+    env:
+      - name: PGPASSWORD
+        value: secret_pass
     command:
     - sh
     - -c
     - |
       echo "Testing PostgreSQL connection..."
-      sleep 10  # Даем время PostgreSQL на запуск
-      if nc -z -w 5 bank-platform-postgres 5432; then
-        echo "✅ PostgreSQL is accessible"
-        exit 0
-      else
-        echo "❌ Cannot connect to PostgreSQL"
-        exit 1
-      fi
+      sleep 10
+      pg_isready -h bank-platform-postgres -p 5432 -U postgres

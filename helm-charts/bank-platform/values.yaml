@@ -103,7 +103,7 @@ zipkin:
   image:
     repository: openzipkin/zipkin   # Образ для Zipkin
     tag: "3.5"                      # Версия Zipkin
-    pullPolicy: IfNotPresent         # Стратегия подкачки
+    pullPolicy: IfNotPresent       
   service:
     port: 9411
 
@@ -119,4 +119,10 @@ prometheus:
 
 grafana:
   enabled: true
+
+elk:
+  enabled: true
+  mode: single   # single | split
+  env: dev       # dev/test/prod - для фильтрации
+
 

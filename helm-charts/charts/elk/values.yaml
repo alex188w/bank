@@ -1,41 +1,40 @@
-enabled: true
-replicaCount: 1
-image:
-  repository: account-service
-  tag: "latest"
-  imagePullPolicy: Never
-service:
-  port: 8082
+mode: single
+env: dev
 
-database:
-  host: "bank-platform-postgres"
-  port: 5432
-  name: "bank"
-  initialize: "false"
-  initMode: "never"
+elasticsearch:
+  enabled: true
+  replicaCount: 1
+  service:
+    port: 9200
 
-# Конфигурация Spring
-config:
-  spring:
-    application:
-      name: account-service
-    r2dbc:
-      url: "r2dbc:postgresql://bank-platform-postgres:5432/bank?currentSchema=users"
-    security:
-      oauth2:
-        client:
-          registration:
-            account-client:
-              client-id: account-service
-              client-secret: "${KEYCLOAK_CLIENT_SECRET}"  # Берём из env
-          provider:
-            keycloak:
-              issuer-uri: http://bank-platform-keycloak:8095/realms/bank
+kibana:
+  enabled: true
+  replicaCount: 1
+  service:
+    port: 5601
 
-# Секреты
-account-service:
-  secrets:
-    keycloakSecret: account-service-keycloak-secret
-    dbCredentials: account-service-db-credentials
+logstash:
+  enabled: true
+  replicaCount: 1
+
+  # куда подключаться
+  kafka:
+    bootstrapServers: "kaffka-service:9092"
+    topic: "bank-platform-logs"
+    groupId: "logstash-bank-platform"
+
+  elasticsearch:
+    hosts: "http://bank-platform-elasticsearch:9200"  # зависит от имени release/сервиса
+
+  filter:
+    enabled: true
+    envFilterEnabled: true
+    envValue: dev
+
+  debugStdout: false
+
+  fingerprintKey: "change-me-in-secret" # лучше вынести в Secret
+
+  
 
 

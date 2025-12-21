@@ -1,0 +1,73 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-logstash-pipeline
+data:
+  bank.conf: |
+    input {
+      kafka {
+        bootstrap_servers => "${KAFKA_BOOTSTRAP_SERVERS}"
+        topics => ["${KAFKA_TOPIC}"]
+        group_id => "${KAFKA_GROUP_ID}"
+        auto_offset_reset => "latest"
+        consumer_threads => 1
+        codec => json { ecs_compatibility => "disabled" }
+      }
+    }
+
+    filter {
+      if [ts] {
+        date { match => ["ts", "ISO8601"] target => "@timestamp" }
+      }
+
+      # Фильтрация по среде (для single-ELK режима)
+      if "${ENV_FILTER_ENABLED}" == "true" {
+        if ![env] or [env] != "${ENV_VALUE}" { drop {} }
+      }
+
+      # Удаляем пароли (на всякий случай)
+      if [password] { mutate { remove_field => ["password"] } }
+      if [newPassword] { mutate { remove_field => ["newPassword"] } }
+
+      # Маскирование accountNumber (пример)
+      if [accountNumber] {
+        mutate { gsub => [ "accountNumber", "(?<=\\d{2})\\d(?=\\d{2})", "*" ] }
+      }
+
+      # Хешируем accountId/login (детерминированно)
+      if [accountId] {
+        fingerprint {
+          source => "accountId"
+          target => "accountIdHash"
+          method => "SHA256"
+          key => "${FINGERPRINT_KEY}"
+        }
+        mutate { remove_field => ["accountId"] }
+      }
+
+      if [login] {
+        fingerprint {
+          source => "login"
+          target => "loginHash"
+          method => "SHA256"
+          key => "${FINGERPRINT_KEY}"
+        }
+        mutate { remove_field => ["login"] }
+      }
+
+      mutate {
+        rename => { "service" => "service.name" }
+        add_field => { "event.dataset" => "bank-platform" }
+      }
+    }
+
+    output {
+      elasticsearch {
+        hosts => ["${ES_HOSTS}"]
+        index => "bank-logs-%{[env]}-%{+YYYY.MM.dd}"
+      }
+
+      if "${DEBUG_STDOUT}" == "true" {
+        stdout { codec => rubydebug }
+      }
+    }

@@ -1,0 +1,47 @@
+replicaCount: 1
+
+image:
+  repository: docker.elastic.co/kibana/kibana
+  tag: "8.12.2"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 5601
+
+# важно: имя сервиса ES внутри релиза elk
+elasticsearch:
+  hosts: "http://bank-platform-elasticsearch:9200"  # для релиза "elk"
+
+ingress:
+  enabled: false
+  className: ""
+  host: ""
+  path: /kibana
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 1Gi
+
+nodeOptions: "--max-old-space-size=512"
+
+probe:
+  readiness:
+    initialDelaySeconds: 60
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 12
+  liveness:
+    initialDelaySeconds: 180
+    periodSeconds: 20
+    timeoutSeconds: 5
+    failureThreshold: 6
+
+encryptionKeys:
+  security: "0123456789abcdef0123456789abcdef"
+  savedObjects: "abcdef0123456789abcdef0123456789"
+  reporting: "fedcba9876543210fedcba9876543210"

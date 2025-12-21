@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-logstash
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-logstash
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-logstash
+    spec:
+      containers:
+        - name: logstash
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: {{ .Values.kafka.bootstrapServers | quote }}
+            - name: KAFKA_TOPIC
+              value: {{ .Values.kafka.topic | quote }}
+            - name: KAFKA_GROUP_ID
+              value: {{ .Values.kafka.groupId | quote }}
+
+            - name: ES_HOSTS
+              value: {{ .Values.elasticsearch.hosts | quote }}
+
+            - name: ENV_FILTER_ENABLED
+              value: {{ ternary "true" "false" .Values.filter.envFilterEnabled | quote }}
+            - name: ENV_VALUE
+              value: {{ .Values.filter.envValue | quote }}
+
+            - name: DEBUG_STDOUT
+              value: {{ ternary "true" "false" .Values.debugStdout | quote }}
+
+            - name: LS_JAVA_OPTS
+              value: {{ .Values.javaOpts | quote }}
+
+            - name: XPACK_MONITORING_ENABLED
+              value: "false"
+
+            {{- if .Values.fingerprintKeySecret.enabled }}
+            - name: FINGERPRINT_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.fingerprintKeySecret.name }}
+                  key: {{ .Values.fingerprintKeySecret.key }}
+            {{- end }}
+
+          volumeMounts:
+            - name: pipeline
+              mountPath: /usr/share/logstash/pipeline
+              readOnly: true
+
+      volumes:
+        - name: pipeline
+          configMap:
+            name: {{ .Release.Name }}-logstash-pipeline

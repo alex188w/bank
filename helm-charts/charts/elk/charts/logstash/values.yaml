@@ -1,0 +1,43 @@
+replicaCount: 1
+
+image:
+  repository: docker.elastic.co/logstash/logstash
+  tag: "8.12.2"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 5044
+
+kafka:
+  bootstrapServers: "kaffka-service:9092"
+  topic: "bank-platform-logs"
+  groupId: "logstash-bank-platform"
+
+elasticsearch:
+  hosts: "http://bank-platform-elasticsearch:9200"
+
+filter:
+  enabled: true
+  envFilterEnabled: true
+  envValue: dev
+
+debugStdout: true
+
+# вынесем ключ в Secret
+fingerprintKeySecret:
+  enabled: true
+  name: logstash-fingerprint
+  key: FINGERPRINT_KEY
+  value: "change-me"
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 256Mi
+  limits:
+    cpu: 300m
+    memory: 512Mi
+
+javaOpts: "-Xms256m -Xmx256m"
+

@@ -35,5 +35,8 @@ dependencies:
 - name: grafana
   repository: file://../charts/grafana
   version: 0.1.0
-digest: sha256:9354d18907db2d48da56f3c9b2cff6a7996b1823354aca684ddf5e4b75560a9c
-generated: "2025-12-19T18:04:19.0732572+05:00"
+- name: elk
+  repository: file://../charts/elk
+  version: 0.1.0
+digest: sha256:b9cd4cfeeb976d9e8e91f8272efaadde568b37615983b125c8d2358e7456e127
+generated: "2025-12-20T22:13:13.0664433+05:00"
