@@ -94,8 +94,83 @@ Grafana allerting
 
 ![Grafana allerting](img/allerting.jpg)
 
+Kibana Logs
+
+![kibana log](img/kibana2.jpg)
+
+Pods
 
 
+![kibana log](img/pods.jpg)
+
+
+Пример вывода лога Кибана
+
+    {
+    "@timestamp": [
+        "2025-12-25T16:03:37.484Z"
+    ],
+    "@version": [
+        "1"
+    ],
+    "@version.keyword": [
+        "1"
+    ],
+    "env": [
+        "dev"
+    ],
+    "env.keyword": [
+        "dev"
+    ],
+    "event.action": [
+        "gateway.notifications.stream"
+    ],
+    "event.action.keyword": [
+        "gateway.notifications.stream"
+    ],
+    "event.dataset": [
+        "bank-platform"
+    ],
+    "event.dataset.keyword": [
+        "bank-platform"
+    ],
+    "level": [
+        "INFO"
+    ],
+    "level.keyword": [
+        "INFO"
+    ],
+    "message": [
+        "Proxy notifications SSE stream requested"
+    ],
+    "message.keyword": [
+        "Proxy notifications SSE stream requested"
+    ],
+    "service.name": [
+        "gateway-service"
+    ],
+    "service.name.keyword": [
+        "gateway-service"
+    ],
+    "span.id": [
+        "f5e9be425b1bf464"
+    ],
+    "span.id.keyword": [
+        "f5e9be425b1bf464"
+    ],
+    "trace.id": [
+        "694d605998a6f8010774ad6b764e8ede"
+    ],
+    "trace.id.keyword": [
+        "694d605998a6f8010774ad6b764e8ede"
+    ],
+    "ts": [
+        "2025-12-25T16:03:37.484Z"
+    ],
+    "_id": "9rFAVpsBiTNor82BXuI9",
+    "_index": "bank-logs-dev-2025.12.25",
+    "_score": null
+    }
 
 
 

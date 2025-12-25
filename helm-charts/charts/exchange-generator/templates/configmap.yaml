@@ -33,9 +33,11 @@ data:
         baggage:
           remote-fields:
             - env
-          correlation:
-            fields:
-              - env
+        correlation:
+          fields:
+            - env
+            - traceId
+            - spanId
       endpoints:
         web:
           exposure:
@@ -62,6 +64,11 @@ data:
       kafka:
         topics:
           exchange-rates: exchange.rates
+      env: "dev"
+      logs:
+        kafka:
+          env: "dev"
+          topic: "bank-platform-logs"
 
     exchange:
       api-url: "https://open.er-api.com/v6/latest/RUB"

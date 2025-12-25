@@ -11,6 +11,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClient;
+
+import example.bank.service.GatewayAudit;
+
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -32,6 +35,7 @@ public class ProxyController {
         private final @Qualifier("cashWebClient") WebClient cashWebClient;
         private final @Qualifier("exchangeWebClient") WebClient exchangeWebClient;
         private final @Qualifier("notificationWebClient") WebClient notificationWebClient;
+        private final GatewayAudit audit;
 
         // Проксируем accounts
         @GetMapping("/accounts")
@@ -112,13 +116,15 @@ public class ProxyController {
 
         @GetMapping(value = "/notifications/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
         public Flux<String> proxyStream() {
-                log.info("========= Загружаем notifications =========");
+                audit.info("gateway.notifications.stream", "Proxy notifications SSE stream requested");
 
                 return notificationWebClient.get()
                                 .uri("/notifications/stream")
                                 .accept(MediaType.TEXT_EVENT_STREAM)
                                 .retrieve()
-                                .bodyToFlux(String.class);
+                                .bodyToFlux(String.class)
+                                .doOnError(e -> audit.error("gateway.notifications.stream",
+                                                "Proxy notifications SSE stream failed", e));
         }
 
         @GetMapping("/debug-token")

@@ -24,6 +24,12 @@ app:
   kafka:
     topics:
       notifications: notifications.raw
+  logs:
+    kafka:
+      enabled: true
+      topic: bank-platform-logs
+      env: dev
+      service: cash-service
 
 server:
   port: 8083

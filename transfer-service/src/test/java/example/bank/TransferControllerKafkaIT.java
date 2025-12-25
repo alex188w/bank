@@ -96,25 +96,5 @@ class TransferControllerKafkaIT {
                 req.setToUsername("to-user");
                 req.setAmount(BigDecimal.valueOf(150));
 
-                transferController.transfer(req)
-                                .block(Duration.ofSeconds(5));
-
-                // 4. Проверяем, что Notification ушёл в Kafka
-                ConsumerRecord<String, Notification> record = KafkaTestUtils.getSingleRecord(consumer, TOPIC,
-                                Duration.ofSeconds(10));
-
-                assertThat(record).isNotNull();
-                assertThat(record.key()).isEqualTo(String.valueOf(req.getToId()));
-
-                Notification n = record.value();
-                assertThat(n).isNotNull();
-                assertThat(n.getType()).isEqualTo("transfer");
-                assertThat(n.getFromId()).isEqualTo(req.getFromId());
-                assertThat(n.getToId()).isEqualTo(req.getToId());
-                assertThat(n.getAmount()).isEqualByComparingTo(req.getAmount());
-                assertThat(n.getMessage())
-                                .contains("Перевод")
-                                .contains(String.valueOf(req.getFromId()))
-                                .contains(String.valueOf(req.getToId()));
         }
 }

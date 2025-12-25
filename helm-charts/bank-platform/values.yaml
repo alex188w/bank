@@ -124,5 +124,9 @@ elk:
   enabled: true
   mode: single   # single | split
   env: dev       # dev/test/prod - для фильтрации
+  # logstash:
+  #   debugStdout: true
+  #   kafka:
+  #     groupId: "logstash-bank-platform3"
 
 

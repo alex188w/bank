@@ -5,10 +5,24 @@ metadata:
 data:
   application.yml: |
     app:
-      env: {{ .Values.global.env | default "dev" | quote }}
+      env: "dev"
+      logs:
+        kafka:
+          env: "dev"
+          topic: "bank-platform-logs"
     spring:
       application:
         name: gateway-service
+
+      kafka:
+        bootstrap-servers: {{ .Values.global.kafka.bootstrapServers | quote }}
+        producer:
+          key-serializer: org.apache.kafka.common.serialization.StringSerializer
+          value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+          acks: all
+          retries: 5
+          properties:
+            enable.idempotence: true
 
       r2dbc:
         url: "r2dbc:postgresql://bank-platform-postgres:5432/bank?currentSchema=users"
@@ -44,9 +58,11 @@ data:
         baggage:
           remote-fields:
             - env
-          correlation:
-            fields:
-              - env
+        correlation:
+          fields:
+            - env
+            - traceId
+            - spanId
       endpoints:
         web:
           exposure:

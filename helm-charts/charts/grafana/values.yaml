@@ -26,26 +26,6 @@ grafana:
       root_url: http://localhost/grafana
       serve_from_sub_path: true
 
-  # ingress:
-  #   enabled: true
-  #   ingressClassName: nginx
-  #   hosts:
-  #     - localhost
-  #   path: /grafana
-  #   pathType: Prefix
-  #   annotations:
-  #     nginx.ingress.kubernetes.io/rewrite-target: /$2
-  #     nginx.ingress.kubernetes.io/use-regex: "true"
-  #   # regex: /grafana(/|$)(.*)
-  #   # но chart grafana ожидает другой формат — ниже вариант через extraPaths:
-  #   extraPaths:
-  #     - path: /grafana(/|$)(.*)
-  #       pathType: ImplementationSpecific
-  #       backend:
-  #         service:
-  #           name: bank-platform-grafana
-  #           port:
-  #             number: 3000
 
   grafana.ini:
     server:

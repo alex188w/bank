@@ -25,6 +25,8 @@ import io.micrometer.core.instrument.Gauge;
 
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicLong;
+import io.micrometer.tracing.Tracer;
+import io.micrometer.tracing.Span;
 
 @Slf4j
 @Service
@@ -33,6 +35,7 @@ public class RealRateUpdater {
 
     @Value("${exchange.api-url}")
     private String apiUrl;
+    private final Tracer tracer;
 
     @Value("${app.kafka.topics.exchange-rates}")
     private String exchangeRatesTopic;
@@ -58,26 +61,32 @@ public class RealRateUpdater {
     }
 
     @Scheduled(fixedRateString = "${exchange.update-interval-ms:60000}")
+    @Scheduled(fixedRateString = "${exchange.update-interval-ms:60000}")
     public void updateRatesFromApi() {
-        log.info("🔄 Запрашиваем реальные курсы валют...");
 
-        WebClient webClient = webClientBuilder.build();
+        Span span = tracer.nextSpan().name("exchange-generator.updateRates").start();
+        try (Tracer.SpanInScope ws = tracer.withSpan(span)) {
 
-        webClient.get()
-                .uri(apiUrl)
-                .retrieve()
-                .bodyToMono(Map.class)
-                .flatMap(response -> extractAndSendRates((Map<String, Object>) response))
-                .doOnSuccess(v -> lastSuccessEpochSeconds.set(Instant.now().getEpochSecond()))
-                .onErrorResume(e -> {
-                    log.error("Ошибка при получении курсов: {}", e.getMessage(), e);
-                    Counter.builder("exchange_rates_fetch_failed_total")
-                            .tag("reason", safeReason(e))
-                            .register(meterRegistry)
-                            .increment();
-                    return Mono.empty();
-                })
-                .subscribe();
+            // в MDC появятся traceId/spanId → Log4j2 Kafka appender подхватит
+            log.info("🔄 Запрашиваем реальные курсы валют...");
+
+            WebClient webClient = webClientBuilder.build();
+
+            webClient.get()
+                    .uri(apiUrl)
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .flatMap(response -> extractAndSendRates((Map<String, Object>) response))
+                    .doOnSuccess(v -> lastSuccessEpochSeconds.set(Instant.now().getEpochSecond()))
+                    .doOnError(e -> log.error("Ошибка при получении курсов: {}", e.getMessage(), e))
+                    .doFinally(sig -> span.end()) // важно закрыть span в конце реактивной цепочки
+                    .subscribe();
+
+        } catch (Exception e) {
+            span.error(e);
+            span.end();
+            throw e;
+        }
     }
 
     private Mono<Void> extractAndSendRates(Map<String, Object> response) {
@@ -119,19 +128,24 @@ public class RealRateUpdater {
     }
 
     private Mono<SendResult<String, ExchangeRate>> sendToKafka(ExchangeRate rate) {
-        return Mono.fromFuture(kafkaTemplate.send(exchangeRatesTopic, rate.getCurrency(), rate))
-                .doOnSuccess(res -> {
-                    var m = res.getRecordMetadata();
-                    log.info("📈 Курс отправлен в Kafka: {} -> buy={}, sell={}, topic={}, partition={}, offset={}",
-                            rate.getCurrency(), rate.getBuy(), rate.getSell(),
-                            m.topic(), m.partition(), m.offset());
-                })
-                .doOnError(e -> {
-                    log.error("Ошибка при отправке курса в Kafka", e);
-                    Counter.builder("exchange_rates_kafka_send_failed_total")
-                            .register(meterRegistry)
-                            .increment();
-                });
+        var current = tracer.currentSpan();
+        if (current == null) {
+            return Mono.fromFuture(kafkaTemplate.send(exchangeRatesTopic, rate.getCurrency(), rate));
+        }
+
+        return Mono.defer(() -> {
+            try (var ws = tracer.withSpan(current)) {
+                return Mono.fromFuture(kafkaTemplate.send(exchangeRatesTopic, rate.getCurrency(), rate))
+                        .doOnSuccess(res -> {
+                            var m = res.getRecordMetadata();
+                            log.info(
+                                    "📈 Курс отправлен в Kafka: {} -> buy={}, sell={}, topic={}, partition={}, offset={}",
+                                    rate.getCurrency(), rate.getBuy(), rate.getSell(),
+                                    m.topic(), m.partition(), m.offset());
+                        })
+                        .doOnError(e -> log.error("Ошибка при отправке курса в Kafka", e));
+            }
+        });
     }
 
     private String safeReason(Throwable e) {

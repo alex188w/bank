@@ -40,9 +40,9 @@ data:
         baggage:
           remote-fields:
             - env
-          correlation:
-            fields:
-              - env
+        correlation:
+          fields:
+            - env
       endpoints:
         web:
           exposure:
@@ -66,6 +66,11 @@ data:
       kafka:
         topics:
           exchange-rates: exchange.rates
+      env: dev
+      logs:
+        kafka:
+          env: dev
+          topic: bank-platform-logs
 
     server:
       port: 8084

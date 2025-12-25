@@ -40,7 +40,6 @@ data:
           acks: all
           retries: 5
           properties:
-            interceptor.classes: io.micrometer.tracing.kafka.KafkaTracingProducerInterceptor
             enable.idempotence: true
 
     management:

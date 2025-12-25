@@ -1,6 +1,10 @@
 spring:
-  kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kaffka-service:9092}
+  logs:
+    kafka:
+      enabled: true
+      topic: ${KAFKA_LOG_TOPIC:bank-platform-logs}
+      env: ${ENV:dev}
+      service: "account-service"
   application:
     name: account-service
   security:
@@ -33,6 +37,7 @@ app:
       enabled: true
       topic: ${KAFKA_LOG_TOPIC:bank-platform-logs}
       env: ${ENV:dev}
+      service: ${spring.application.name:unknown}
 
 server:
   port: 8082

@@ -21,7 +21,7 @@ spec:
             - name: http
               containerPort: 9200
           env:
-            # single-node, без безопасности, только для учебного стенда/ТЗ
+            # single-node, без безопасности
             - name: discovery.type
               value: "single-node"
             - name: xpack.security.enabled
@@ -51,6 +51,8 @@ spec:
             periodSeconds: 20
             timeoutSeconds: 5
             failureThreshold: 6
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
 
   volumeClaimTemplates:
     - metadata:

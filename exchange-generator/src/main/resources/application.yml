@@ -6,6 +6,10 @@ app:
   kafka:
     topics:
       exchange-rates: exchange.rates
+  logs:
+    kafka:
+      env: dev
+      topic: bank-platform-logs
 
 server:
   port: 8085
@@ -14,3 +18,6 @@ server:
 exchange:
   api-url: https://open.er-api.com/v6/latest/RUB
   update-interval-ms: 60000   # раз в минуту
+
+
+

@@ -1,6 +1,9 @@
 spring:
+  reactor:
+    context-propagation: auto
   application:
     name: transfer-service
+  
   main:
     allow-bean-definition-overriding: true
   security:
@@ -35,6 +38,10 @@ app:
   kafka:
     topics:
       notifications: notifications.raw
+  logs:
+    kafka:
+      env: dev
+      topic: bank-platform-logs
 
 server:
   port: 8086

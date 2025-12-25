@@ -28,6 +28,8 @@ import example.bank.Notification;
 @Slf4j
 public class NotificationService {
 
+    private final NotificationAudit audit;
+
     private final MeterRegistry meterRegistry;
 
     private final Sinks.Many<Notification> sink = Sinks.many().replay().limit(1);
@@ -51,21 +53,24 @@ public class NotificationService {
 
         Counter.builder("notification_sse_send_total")
                 .description("Count of notifications delivered to SSE subscribers")
-                .tag("result", result)              // success|failure
+                .tag("result", result) // success|failure
                 .tag("login", safe(login))
                 .register(meterRegistry)
                 .increment();
     }
 
     public void publish(Notification notification) {
-        if (notification == null) return;
+        if (notification == null)
+            return;
 
         try {
-            log.info("Publish notification to SSE: {}", notification);
+            audit.info("notification.sse.publish",
+                    "Publish notification to SSE: type=" + safe(notification.getType())
+                            + " username=" + safe(notification.getUsername()));
+
             sink.tryEmitNext(notification);
         } catch (Exception e) {
-            // Это ошибка публикации в sink (редко), можно считать как failure без login
-            log.error("Ошибка при публикации в sink", e);
+            audit.error("notification.sse.publish", "Failed to publish to sink", e);
             incSseSend("failure", notification);
         }
     }
@@ -78,15 +83,19 @@ public class NotificationService {
                                         "keep-alive",
                                         null, null, null,
                                         "keep-alive " + LocalTime.now(),
-                                        null, null
-                                ))
-                )
+                                        null, null)))
                 .filter(Objects::nonNull)
                 .share();
 
         return data
-                .doOnSubscribe(sub -> activeSubscribers.incrementAndGet())
-                .doFinally(sig -> activeSubscribers.decrementAndGet())
+                .doOnSubscribe(sub -> {
+                    audit.info("notification.sse.subscribe", "SSE subscriber connected");
+                    activeSubscribers.incrementAndGet();
+                })
+                .doFinally(sig -> {
+                    audit.info("notification.sse.unsubscribe", "SSE subscriber disconnected");
+                    activeSubscribers.decrementAndGet();
+                })
                 .flatMap(n -> {
                     // keep-alive не считаем
                     if ("keep-alive".equalsIgnoreCase(safe(n.getType()))) {

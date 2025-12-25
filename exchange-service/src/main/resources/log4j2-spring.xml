@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Properties>
+    <Property name="APP_NAME">${spring:spring.application.name:-gateway-service}</Property>
+    <Property name="ENV">${spring:app.env:-dev}</Property>
+    <Property name="KAFKA_BOOTSTRAP">${spring:spring.kafka.bootstrap-servers:-kaffka-service:9092}</Property>
+    <Property name="KAFKA_TOPIC">${spring:app.logs.kafka.topic:-bank-platform-logs}</Property>
+  </Properties>
+
+  <Appenders>
+    <Async name="ASYNC_KAFKA" bufferSize="2048" blocking="false">
+      <AppenderRef ref="KAFKA"/>
+    </Async>
+
+    <Kafka name="KAFKA" topic="${KAFKA_TOPIC}">
+      <Property name="bootstrap.servers">${KAFKA_BOOTSTRAP}</Property>
+      <Property name="acks">1</Property>
+      <Property name="linger.ms">5</Property>
+
+      <PatternLayout pattern="{&quot;ts&quot;:&quot;%d{yyyy-MM-dd'T'HH:mm:ss.SSSX}&quot;,&quot;level&quot;:&quot;%p&quot;,&quot;service&quot;:&quot;${APP_NAME}&quot;,&quot;env&quot;:&quot;${ENV}&quot;,&quot;event&quot;:{&quot;action&quot;:&quot;%X{event.action}&quot;},&quot;message&quot;:&quot;%enc{%m}{JSON}&quot;,&quot;trace.id&quot;:&quot;%X{traceId}&quot;,&quot;span.id&quot;:&quot;%X{spanId}&quot;}%n"/>
+    </Kafka>
+
+    <Console name="CONSOLE">
+      <PatternLayout pattern="%d{ISO8601} %-5p [%t] %c - %m%n"/>
+    </Console>
+  </Appenders>
+
+  <Loggers>
+    <Logger name="org.apache.kafka.clients" level="OFF" additivity="false"/>
+    <Logger name="org.apache.kafka.common" level="OFF" additivity="false"/>
+
+    <Root level="INFO">
+      <AppenderRef ref="ASYNC_KAFKA"/>
+      <AppenderRef ref="CONSOLE"/>
+    </Root>
+  </Loggers>
+</Configuration>

@@ -20,7 +20,7 @@ prometheus:
       - '--web.route-prefix=/prometheus'
       - '--web.enable-lifecycle'
     
-    # Если используете sidecar для конфигов
+    # Если используется sidecar для конфигов
     configMaps:
       - prometheus-config
     

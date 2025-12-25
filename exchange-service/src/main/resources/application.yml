@@ -15,14 +15,14 @@ app:
   kafka:
     topics:
       exchange-rates: exchange.rates
+  logs:
+    kafka:
+      env: dev
+      topic: bank-platform-logs
 
 server:
   port: 8084
 
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info
+
 
 

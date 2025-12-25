@@ -12,6 +12,10 @@ app:
   kafka:
     topics:
       notifications: notifications.raw
+  logs:
+    kafka:
+      env: dev
+      topic: bank-platform-logs
 
 server:
   port: 8087

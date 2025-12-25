@@ -59,10 +59,18 @@ spec:
           livenessProbe:
             tcpSocket:
               port: 5432
-            initialDelaySeconds: 60   # дать БД прогреться
+            initialDelaySeconds: 60   
             periodSeconds: 30
             timeoutSeconds: 5
             failureThreshold: 5
+
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
 
           volumeMounts:
             - name: pgdata

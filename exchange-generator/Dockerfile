@@ -15,7 +15,7 @@ COPY exchange-generator/pom-docker.xml ./pom.xml
 COPY exchange-generator/src ./src
 
 # Скачиваем зависимости и собираем
-RUN mvn dependency:go-offline -B
+# RUN mvn dependency:go-offline -B
 RUN mvn clean package -DskipTests
 
 # Этап 2: минимальный runtime-образ

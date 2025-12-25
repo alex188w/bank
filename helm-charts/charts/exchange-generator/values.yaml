@@ -7,9 +7,8 @@ image:
 service:
   port: 8085
 
-config: {}  # оставляем пустым, больше нет r2dbc или паролей
+config: {}  # оставляем пустым
 
-# ExternalSecrets можно оставить, если нужны другие секреты
 secretStore:
   create: false
 

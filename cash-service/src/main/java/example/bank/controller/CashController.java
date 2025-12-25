@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -21,8 +22,8 @@ import example.bank.Notification;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.web.server.ServerWebExchange;
 
 @Slf4j
 @RestController
@@ -31,9 +32,11 @@ import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 public class CashController {
 
         private final WebClient accountWebClient;
-        private final KafkaTemplate<String, Notification> kafkaTemplate;
+
+        private final @Qualifier("notificationKafkaTemplate") KafkaTemplate<String, Notification> kafkaTemplate;
 
         private final MeterRegistry meterRegistry;
+        private final CashObservability audit;
 
         @Value("${app.kafka.topics.notifications}")
         private String notificationsTopic;
@@ -64,42 +67,78 @@ public class CashController {
         }
 
         @PostMapping("/deposit/{accountId}")
-        public Mono<Void> deposit(@PathVariable Long accountId,
+        public Mono<Void> deposit(ServerWebExchange exchange,
+                        @PathVariable Long accountId,
                         @RequestParam BigDecimal amount) {
 
-                return currentLogin().flatMap(login -> accountWebClient.post()
-                                .uri("/accounts/{id}/deposit?amount={amount}", accountId, amount)
-                                .retrieve()
-                                .bodyToMono(Void.class)
-                                .then(sendNotification(accountId, "deposit", amount, null, login)) // <- прокидываем
-                                                                                                   // login
-                                .doOnSuccess(v -> inc("cash_deposit_total", "success", login,
-                                                String.valueOf(accountId)))
-                                .doOnError(e -> inc("cash_deposit_total", "failure", login,
-                                                String.valueOf(accountId))));
+                log.info("Deposit request: id={}, amount={}", accountId, amount);
+
+                return currentLogin().flatMap(login -> {
+                        audit.depositRequested(exchange, login, accountId);
+
+                        // безопасно прокинуть traceparent дальше 
+                        String tp = exchange.getRequest().getHeaders().getFirst("traceparent");
+
+                        return accountWebClient.post()
+                                        .uri("/accounts/{id}/deposit?amount={amount}", accountId, amount)
+                                        .headers(h -> {
+                                                if (tp != null)
+                                                        h.set("traceparent", tp);
+                                        })
+                                        .retrieve()
+                                        .bodyToMono(Void.class)
+                                        .then(sendNotification(exchange, accountId, "deposit", amount, null, login))
+                                        .doOnSuccess(v -> {
+                                                inc("cash_deposit_total", "success", login, String.valueOf(accountId));
+                                                audit.depositSuccess(exchange, login, accountId);
+                                        })
+                                        .doOnError(e -> {
+                                                inc("cash_deposit_total", "failure", login, String.valueOf(accountId));
+                                                audit.depositFailed(exchange, login, accountId, e);
+                                        });
+                });
         }
 
         @PostMapping("/withdraw/{accountId}")
-        public Mono<Void> withdraw(@PathVariable Long accountId,
+        public Mono<Void> withdraw(ServerWebExchange exchange,
+                        @PathVariable Long accountId,
                         @RequestParam BigDecimal amount) {
 
-                return currentLogin().flatMap(login -> accountWebClient.post()
-                                .uri("/accounts/{id}/withdraw?amount={amount}", accountId, amount)
-                                .retrieve()
-                                .bodyToMono(Void.class)
-                                .then(sendNotification(accountId, "withdraw", amount, null, login))
-                                .doOnSuccess(v -> inc("cash_withdraw_total", "success", login,
-                                                String.valueOf(accountId)))
-                                .doOnError(e -> inc("cash_withdraw_total", "failure", login,
-                                                String.valueOf(accountId))));
+                log.info("Withdraw request: id={}, amount={}", accountId, amount);
+
+                return currentLogin().flatMap(login -> {
+                        audit.withdrawRequested(exchange, login, accountId);
+
+                        String tp = exchange.getRequest().getHeaders().getFirst("traceparent");
+
+                        return accountWebClient.post()
+                                        .uri("/accounts/{id}/withdraw?amount={amount}", accountId, amount)
+                                        .headers(h -> {
+                                                if (tp != null)
+                                                        h.set("traceparent", tp);
+                                        })
+                                        .retrieve()
+                                        .bodyToMono(Void.class)
+                                        .then(sendNotification(exchange, accountId, "withdraw", amount, null, login))
+                                        .doOnSuccess(v -> {
+                                                inc("cash_withdraw_total", "success", login, String.valueOf(accountId));
+                                                audit.withdrawSuccess(exchange, login, accountId);
+                                        })
+                                        .doOnError(e -> {
+                                                inc("cash_withdraw_total", "failure", login, String.valueOf(accountId));
+                                                audit.withdrawFailed(exchange, login, accountId, e);
+                                        });
+                });
         }
 
-        private Mono<Void> sendNotification(Long accountId,
+        private Mono<Void> sendNotification(ServerWebExchange exchange,
+                        Long accountId,
                         String type,
                         BigDecimal amount,
                         String customMessage,
                         String login) {
 
+                // amount в лог не пишем, но в уведомлении он есть (это не лог)
                 String message = switch (type.toLowerCase()) {
                         case "deposit" -> String.format("Пополнение счёта №%d на сумму %.2f", accountId, amount);
                         case "withdraw" -> String.format("Снятие со счёта №%d на сумму %.2f", accountId, amount);
@@ -117,14 +156,15 @@ public class CashController {
                                 amount,
                                 accountId);
 
-                return Mono.fromFuture(kafkaTemplate.send(
-                                notificationsTopic,
-                                String.valueOf(accountId),
-                                notification))
-                                .doOnSuccess(this::logKafkaSuccess)
+                return Mono.fromFuture(kafkaTemplate.send(notificationsTopic, String.valueOf(accountId), notification))
+                                .doOnSuccess(result -> {
+                                        logKafkaSuccess(result);
+                                        audit.notificationSent(exchange, login, accountId, type);
+                                })
                                 .doOnError(e -> {
                                         log.error("Ошибка при отправке уведомления в Kafka: {}", e.getMessage(), e);
                                         incNotifFail(login, String.valueOf(accountId), type);
+                                        audit.notificationFailed(exchange, login, accountId, type, e);
                                 })
                                 .then();
         }

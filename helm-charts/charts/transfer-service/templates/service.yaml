@@ -11,6 +11,6 @@ spec:
       targetPort: {{ .Values.service.port }}
       protocol: TCP
       name: http
-      nodePort: 30086   # <--- добавь этот параметр
+      nodePort: 30086 
   selector:
     app: {{ include "transfer-service.name" . }}

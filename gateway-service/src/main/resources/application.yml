@@ -38,58 +38,7 @@ spring:
   
   webflux:
     static-path-pattern: "/static/**"
-          
-  cloud:
-    gateway:
-      httpclient:
-        wiretap: true
-      httpserver:
-        wiretap: true
-      default-filters:
-        - RemoveRequestHeader=Cookie
-      routes:
-        - id: cash-service
-          uri: http://bank-platform-cash-service:8083
-          predicates:
-            - Path=/api/cash/**
-          filters:
-            - StripPrefix=1
-
-        - id: account-service
-          uri: http://bank-platform-account-service:8082
-          predicates:
-            - Path=/api/accounts/**
-          filters:
-            - StripPrefix=1
-
-        - id: exchange-service
-          uri: http://bank-platform-exchange-service:8084
-          predicates:
-            - Path=/api/exchange/**
-          filters:
-            - StripPrefix=1
-
-        - id: exchangeGenerator
-          uri: http://bank-platform-exchangeGenerator:8085
-          predicates:
-            - Path=/api/exchangeGenerator/**
-          filters:
-            - StripPrefix=1
-
-        - id: transfer-service
-          uri: http://bank-platform-transfer-service:8084
-          predicates:
-            - Path=/api/transfer/**
-          filters:
-            - StripPrefix=1
-
-        - id: notification-service
-          uri: http://bank-platform-notification-service:8087
-          predicates:
-            - Path=/api/notifications/**, /notifications/**
-          filters:
-            - StripPrefix=1
-
+  
 management:
   tracing:
     sampling:
@@ -132,4 +81,10 @@ keycloak:
   realm: bank
   client-id: gateway-service
   client-secret: "${KEYCLOAK_CLIENT_SECRET}"
+  
+app:
+  logs:
+    kafka:
+      env: dev
+      topic: bank-platform-logs
 

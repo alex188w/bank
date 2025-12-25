@@ -12,4 +12,4 @@ service:
 resources: {}
 
 env:
-  STORAGE_TYPE: mem   # для учебного/локального стенда
+  STORAGE_TYPE: mem  

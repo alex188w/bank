@@ -73,8 +73,8 @@ spec:
           startupProbe:
             tcpSocket:
               port: 8082
-            failureThreshold: 50
-            periodSeconds: 15
+            failureThreshold: 30
+            periodSeconds: 5
             
           livenessProbe:
             tcpSocket:

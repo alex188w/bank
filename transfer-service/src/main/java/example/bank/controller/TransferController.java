@@ -8,13 +8,10 @@ import example.bank.dto.TransferRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import org.apache.kafka.clients.producer.RecordMetadata;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.support.SendResult;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -22,7 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import reactor.core.publisher.Mono;
-
+import example.bank.service.TransferAudit;
 import example.bank.service.TransferService;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
@@ -35,6 +32,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 public class TransferController {
 
         private final TransferService transferService;
+        private final TransferAudit audit;
         private final KafkaTemplate<String, Notification> kafkaTemplate;
 
         private final MeterRegistry meterRegistry;
@@ -129,17 +127,26 @@ public class TransferController {
         public Mono<Void> transfer(@RequestBody TransferRequest request) {
                 return currentLogin().flatMap(fromLogin -> {
 
-                        log.info("Transfer request: from_login={} {}({}) → {}({}), amount={}",
-                                        fromLogin,
-                                        request.getFromUsername(), request.getFromId(),
-                                        request.getToUsername(), request.getToId(),
-                                        request.getAmount());
+                        // 1) Входной лог (без amount)
+                        audit.info("transfer.create",
+                                        String.format("Transfer request: from_login=%s %s(%d) → %s(%d)",
+                                                        safe(fromLogin),
+                                                        safe(request.getFromUsername()), request.getFromId(),
+                                                        safe(request.getToUsername()), request.getToId()));
 
-                        // Blocker
+                        // 2) Blocker
                         if (blocker.shouldBlock()) {
+                                audit.warn("transfer.blocked",
+                                                String.format("Transfer blocked as suspicious: from_login=%s %s(%d) → %s(%d)",
+                                                                safe(fromLogin),
+                                                                safe(request.getFromUsername()), request.getFromId(),
+                                                                safe(request.getToUsername()), request.getToId()));
+
                                 incBlocked(fromLogin, request);
                                 incFailed(fromLogin, request, "blocked");
                                 incTransferTotal("failure", fromLogin, request);
+                                incTransferTotalByUser("failure", fromLogin);
+
                                 return Mono.error(new IllegalStateException("Transfer blocked as suspicious"));
                         }
 
@@ -149,12 +156,17 @@ public class TransferController {
                                         request.getToUsername(),
                                         request.getToId(),
                                         request.getAmount())
-                                        .doOnError(e -> incFailed(fromLogin, request, "business"));
+                                        .doOnError(e -> {
+                                                incFailed(fromLogin, request, "business");
+                                                audit.error("transfer.business", "Transfer business failed", e);
+                                        });
 
                         Mono<Void> notify = sendNotification(request, fromLogin)
+                                        .doOnSuccess(v -> audit.info("transfer.notify", "Notification sent"))
                                         .doOnError(e -> {
                                                 incNotificationFail(fromLogin, request);
                                                 incFailed(fromLogin, request, "notification");
+                                                audit.error("transfer.notify", "Notification send failed", e);
                                         });
 
                         return business
@@ -163,11 +175,13 @@ public class TransferController {
                                                 incTransferTotal("success", fromLogin, request);
                                                 incTransferTotalByUser("success", fromLogin);
                                                 recordTransferAmountByUser(fromLogin, request.getAmount());
-                                                log.info("Transfer OK + notification sent (async via Kafka)");
+                                                audit.info("transfer.business", "Transfer OK");
                                         })
                                         .doOnError(e -> {
                                                 incTransferTotal("failure", fromLogin, request);
-                                                incTransferTotalByUser("failure", fromLogin); // ✅ NEW
+                                                incTransferTotalByUser("failure", fromLogin);
+                                                // не логируем повторно ошибку: её уже логирует business/notify
+                                                // doOnError
                                         })
                                         .then();
                 });
@@ -198,7 +212,6 @@ public class TransferController {
                                                 String.valueOf(request.getToId()),
                                                 notification))
                                 .doOnSuccess(res -> {
-                                        logSuccess(res);
                                         incNotifTotal("success", fromLogin, request);
                                 })
                                 .doOnError(e -> {
@@ -206,11 +219,5 @@ public class TransferController {
                                         incNotifTotal("failure", fromLogin, request);
                                 })
                                 .then();
-        }
-
-        private void logSuccess(SendResult<String, Notification> result) {
-                RecordMetadata meta = result.getRecordMetadata();
-                log.info("📨 Notification sent: topic={}, partition={}, offset={}",
-                                meta.topic(), meta.partition(), meta.offset());
         }
 }

@@ -26,21 +26,16 @@ public class ExchangeController {
     public Mono<Map<String, Object>> convert(
             @RequestParam String from,
             @RequestParam String to,
-            @RequestParam BigDecimal amount) {
-
+            @RequestParam BigDecimal amount
+    ) {
+        // amount НЕ логируем нигде
         return Mono.fromSupplier(() -> {
             BigDecimal result = exchangeService.convert(from, to, amount);
             return Map.of(
                     "from", from,
                     "to", to,
-                    "amount", amount,
-                    "result", result);
+                    "result", result
+            );
         });
     }
-
-    // Приём обновлений от exchange-generator
-    // @PostMapping("/update")
-    // public Mono<Void> updateRates(@RequestBody List<ExchangeRate> newRates) {
-    //     return Mono.fromRunnable(() -> exchangeService.updateRates(newRates));
-    // }
 }

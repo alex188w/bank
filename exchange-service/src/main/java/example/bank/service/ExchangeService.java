@@ -13,43 +13,58 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import java.util.*;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class ExchangeService {
 
     private final Map<String, ExchangeRate> rates = new ConcurrentHashMap<>();
+    private final ExchangeAudit audit;
 
-    @KafkaListener(
-            topics = "${app.kafka.topics.exchange-rates}",
-            groupId = "exchange-service"
-    )
+    @KafkaListener(topics = "${app.kafka.topics.exchange-rates}", groupId = "exchange-service", containerFactory = "exchangeRateKafkaListenerContainerFactory")
     public void onRateUpdate(ExchangeRate rate) {
-        if (rate == null || rate.getCurrency() == null) {
-            log.warn("Получен некорректный курс: {}", rate);
+        if (rate == null || rate.getCurrency() == null || rate.getCurrency().isBlank()) {
+            audit.warn("exchange.rate.update", "Invalid exchange rate received from Kafka");
             return;
         }
-        String key = rate.getCurrency().toUpperCase();
+
+        String key = rate.getCurrency().toUpperCase(Locale.ROOT);
         rates.put(key, rate);
-        log.info("💰 Обновлён курс из Kafka: {} -> buy={}, sell={}", key, rate.getBuy(), rate.getSell());
+
+        audit.info("exchange.rate.update",
+                String.format("Rate updated from Kafka: %s -> buy=%s, sell=%s",
+                        key, rate.getBuy(), rate.getSell()));
     }
 
     public List<ExchangeRate> getAllRates() {
         List<ExchangeRate> list = new ArrayList<>(rates.values());
-        log.info("📊 Текущее количество курсов в памяти: {}", list.size());
+        audit.info("exchange.rates.list", "Rates list requested, size=" + list.size());
         return list;
     }
 
     public BigDecimal convert(String from, String to, BigDecimal amount) {
-        if (from.equalsIgnoreCase(to))
-            return amount;
+        // amount НЕ логируем 
+        if (from == null || to == null || amount == null) {
+            audit.warn("exchange.convert", "Convert request invalid (null fields)");
+            throw new IllegalArgumentException("Invalid request");
+        }
 
-        ExchangeRate fromRate = rates.getOrDefault(from.toUpperCase(),
+        if (from.equalsIgnoreCase(to)) {
+            audit.info("exchange.convert", "Convert requested: from=" + from + " to=" + to + " (same currency)");
+            return amount;
+        }
+
+        ExchangeRate fromRate = rates.getOrDefault(from.toUpperCase(Locale.ROOT),
                 new ExchangeRate(from, BigDecimal.ONE, BigDecimal.ONE));
-        ExchangeRate toRate = rates.getOrDefault(to.toUpperCase(),
+        ExchangeRate toRate = rates.getOrDefault(to.toUpperCase(Locale.ROOT),
                 new ExchangeRate(to, BigDecimal.ONE, BigDecimal.ONE));
 
         BigDecimal rubAmount = amount.multiply(fromRate.getSell());
-        return rubAmount.divide(toRate.getBuy(), 2, RoundingMode.HALF_UP);
+        BigDecimal result = rubAmount.divide(toRate.getBuy(), 2, RoundingMode.HALF_UP);
+
+        audit.info("exchange.convert", "Convert done: from=" + from + " to=" + to);
+        return result;
     }
 }
