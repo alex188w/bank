@@ -1,0 +1,76 @@
+{{- if .Values.topics.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "kaffka-service.fullname" . }}-topics
+  labels:
+    {{- include "kaffka-service.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "10"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        {{- include "kaffka-service.labels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      serviceAccountName: {{ include "kaffka-service.fullname" . }}-topics
+      containers:
+        - name: topics
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: BOOTSTRAP
+              value: "{{ .Values.topics.bootstrapServer }}"
+            - name: RECREATE
+              value: "{{ .Values.topics.recreate }}"
+          command: ["/bin/bash", "-lc"]
+          args:
+            - |
+              set -euo pipefail
+
+              echo "[topics-job] bootstrap=${BOOTSTRAP} recreate=${RECREATE}"
+              echo "[topics-job] waiting for kafka..."
+
+              # ждём пока брокер начнёт отвечать
+              for i in {1..60}; do
+                /opt/kafka/bin/kafka-topics.sh --bootstrap-server "${BOOTSTRAP}" --list >/dev/null 2>&1 && break
+                echo "[topics-job] kafka not ready yet (${i}/60)"
+                sleep 2
+              done
+
+              echo "[topics-job] kafka is ready, current topics:"
+              /opt/kafka/bin/kafka-topics.sh --bootstrap-server "${BOOTSTRAP}" --list || true
+
+              {{- range .Values.topics.list }}
+              echo "----"
+              echo "[topics-job] ensure topic: {{ .name }}"
+
+              if [ "${RECREATE}" = "true" ]; then
+                echo "[topics-job] deleting topic {{ .name }} (ignore errors)"
+                /opt/kafka/bin/kafka-topics.sh --bootstrap-server "${BOOTSTRAP}" --delete --topic "{{ .name }}" || true
+                # небольшая пауза на удаление в kRaft/metadata
+                sleep 2
+              fi
+
+              # создаём только если не существует
+              if /opt/kafka/bin/kafka-topics.sh --bootstrap-server "${BOOTSTRAP}" --list | grep -x "{{ .name }}" >/dev/null 2>&1; then
+                echo "[topics-job] exists: {{ .name }}"
+              else
+                echo "[topics-job] creating: {{ .name }}"
+                /opt/kafka/bin/kafka-topics.sh --bootstrap-server "${BOOTSTRAP}" \
+                  --create --if-not-exists \
+                  --topic "{{ .name }}" \
+                  --partitions {{ .partitions | default 1 }} \
+                  --replication-factor {{ .replicationFactor | default 1 }}
+              fi
+              {{- end }}
+
+              echo "----"
+              echo "[topics-job] final topics:"
+              /opt/kafka/bin/kafka-topics.sh --bootstrap-server "${BOOTSTRAP}" --list || true
+
+{{- end }}

@@ -1,165 +1,158 @@
 pipeline {
-    agent { label 'bank-agent' }
+  agent { label 'bank-agent' }
 
-    environment {
-        CHART_PATH = "helm-charts/bank-platform"
+  environment {
+    CHART_PATH   = "helm-charts/bank-platform"
+    RELEASE_NAME = "bank-platform"
+  }
 
-        KUBE_NAMESPACE_DEV = "dev"
-        KUBE_NAMESPACE_TEST = "test"
-        KUBE_NAMESPACE_PROD = "prod"
+  parameters {
+    choice(
+      name: 'DEPLOY_ENV',
+      choices: ['dev', 'test', 'prod'],
+      description: 'Namespace / окружение для деплоя зонтичного чарта'
+    )
+    booleanParam(
+      name: 'UPGRADE_KAFKA',
+      defaultValue: true,
+      description: 'Разворачивать/обновлять Kafka subchart (kaffka-service)'
+    )
+    booleanParam(
+      name: 'RECREATE_TOPICS',
+      defaultValue: false,
+      description: 'Пересоздать Kafka топики (hook Job post-upgrade)'
+    )
+  }
 
-        RELEASE_NAME = "bank-platform"
+  stages {
+    stage('Checkout') {
+      steps { checkout scm }
     }
 
-    parameters {
-        choice(
-            name: 'DEPLOY_ENV',
-            choices: ['dev', 'test', 'prod'],
-            description: 'Окружение для деплоя зонтичного чарта (включая Kafka)'
-        )
-        booleanParam(
-            name: 'UPGRADE_KAFKA',
-            defaultValue: true,
-            description: 'Разворачивать/обновлять Kafka (subchart kaffka-service)'
-        )
+    stage('Helm Dependencies') {
+      steps {
+        sh "helm dependency update ${CHART_PATH}"
+      }
     }
 
-    stages {
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
-
-        stage('Helm Dependencies') {
-            steps {
-                sh "helm dependency update ${CHART_PATH}"
-            }
-        }
-
-        stage('Helm Lint (Umbrella)') {
-            steps {
-                sh "helm lint ${CHART_PATH}"
-            }
-        }
-
-        // === DEV / TEST DEPLOY ===
-        stage('Deploy to dev/test') {
-            when {
-                anyOf {
-                    expression { params.DEPLOY_ENV == 'dev' }
-                    expression { params.DEPLOY_ENV == 'test' }
-                }
-            }
-            steps {
-                script {
-                    def ns = (params.DEPLOY_ENV == 'dev') ? KUBE_NAMESPACE_DEV : KUBE_NAMESPACE_TEST
-
-                    // общие значения для Kafka-подчарта
-                    def kafkaValues = params.UPGRADE_KAFKA ? """
-                        --set kaffka-service.enabled=true \
-                        --set kaffka-service.kafka.logDirs=/tmp/kraft-combined-logs \
-                        --set kaffka-service.topics.notifications.raw.name=notifications.raw \
-                        --set kaffka-service.topics.exchange.rates.name=exchange.rates \
-                    """ : "--set kaffka-service.enabled=false"
-
-                    sh """
-                      helm upgrade --install ${RELEASE_NAME} ${CHART_PATH} \
-                        --namespace ${ns} \
-                        ${kafkaValues} \
-                        --set global.kafka.bootstrapServers=kaffka-service:9092 \
-                        --set global.env=${params.DEPLOY_ENV}
-                    """
-                }
-            }
-        }
-
-        stage('Helm tests (test env)') {
-            when {
-                expression { params.DEPLOY_ENV == 'test' }
-            }
-            steps {
-                sh """
-                  helm test ${RELEASE_NAME} \
-                    --namespace ${KUBE_NAMESPACE_TEST} \
-                    --timeout 3m --logs
-                """
-            }
-        }
-
-        // === PROD: сначала test + helm test, затем prod ===
-        stage('Pre-prod deploy (to test)') {
-            when {
-                expression { params.DEPLOY_ENV == 'prod' }
-            }
-            steps {
-                script {
-                    def kafkaValues = params.UPGRADE_KAFKA ? """
-                        --set kaffka-service.enabled=true \
-                        --set kaffka-service.kafka.logDirs=/tmp/kraft-combined-logs \
-                        --set kaffka-service.topics.notifications.raw.name=notifications.raw \
-                        --set kaffka-service.topics.exchange.rates.name=exchange.rates \
-                    """ : "--set kaffka-service.enabled=false"
-
-                    sh """
-                      helm upgrade --install ${RELEASE_NAME} ${CHART_PATH} \
-                        --namespace ${KUBE_NAMESPACE_TEST} \
-                        ${kafkaValues} \
-                        --set global.kafka.bootstrapServers=kaffka-service:9092 \
-                        --set global.env=test
-                    """
-
-                    sh """
-                      helm test ${RELEASE_NAME} \
-                        --namespace ${KUBE_NAMESPACE_TEST} \
-                        --timeout 3m --logs
-                    """
-                }
-            }
-        }
-
-        stage('Manual Approval for PROD') {
-            when {
-                expression { params.DEPLOY_ENV == 'prod' }
-            }
-            steps {
-                timeout(time: 30, unit: 'MINUTES') {
-                    input message: "Развернуть bank-platform (включая Kafka) в PROD?"
-                }
-            }
-        }
-
-        stage('Deploy to prod') {
-            when {
-                expression { params.DEPLOY_ENV == 'prod' }
-            }
-            steps {
-                script {
-                    def kafkaValues = params.UPGRADE_KAFKA ? """
-                        --set kaffka-service.enabled=true \
-                        --set kaffka-service.kafka.logDirs=/tmp/kraft-combined-logs \
-                        --set kaffka-service.topics.notifications.raw.name=notifications.raw \
-                        --set kaffka-service.topics.exchange.rates.name=exchange.rates \
-                    """ : "--set kaffka-service.enabled=false"
-
-                    sh """
-                      helm upgrade --install ${RELEASE_NAME} ${CHART_PATH} \
-                        --namespace ${KUBE_NAMESPACE_PROD} \
-                        ${kafkaValues} \
-                        --set global.kafka.bootstrapServers=kaffka-service:9092 \
-                        --set global.env=prod
-                    """
-                }
-            }
-        }
+    stage('Helm Lint (Umbrella)') {
+      steps {
+        sh "helm lint ${CHART_PATH}"
+      }
     }
 
-    post {
-        success {
-            echo "Umbrella chart '${RELEASE_NAME}' успешно задеплоен (env=${params.DEPLOY_ENV}, Kafka=${params.UPGRADE_KAFKA})."
+    // DEV / TEST
+    stage('Deploy to dev/test') {
+      when {
+        anyOf {
+          expression { params.DEPLOY_ENV == 'dev' }
+          expression { params.DEPLOY_ENV == 'test' }
         }
-        failure {
-            echo "Ошибка при деплое зонтичного чарта '${RELEASE_NAME}' (env=${params.DEPLOY_ENV})."
+      }
+      steps {
+        script {
+          def ns = params.DEPLOY_ENV
+
+          def kafkaFlags = params.UPGRADE_KAFKA ? """
+            --set kaffka-service.enabled=true \
+            --set kaffka-service.topics.enabled=true \
+            --set kaffka-service.topics.recreate=${params.RECREATE_TOPICS} \
+            --set kaffka-service.topics.bootstrapServer=kaffka-service:9092 \
+          """ : "--set kaffka-service.enabled=false"
+
+          sh """
+            helm upgrade --install ${RELEASE_NAME} ${CHART_PATH} \
+              --namespace ${ns} --create-namespace \
+              ${kafkaFlags} \
+              --set global.kafka.bootstrapServers=kaffka-service:9092 \
+              --set global.env=${params.DEPLOY_ENV} \
+              --set elk.env=${params.DEPLOY_ENV}
+          """
         }
+      }
     }
+
+    // helm test - только в test
+    stage('Helm tests (test env)') {
+      when { expression { params.DEPLOY_ENV == 'test' } }
+      steps {
+        sh """
+          helm test ${RELEASE_NAME} \
+            --namespace test \
+            --timeout 3m --logs
+        """
+      }
+    }
+
+    // PROD: сначала test + helm test, потом approval, потом prod
+    stage('Pre-prod deploy (to test)') {
+      when { expression { params.DEPLOY_ENV == 'prod' } }
+      steps {
+        script {
+          def kafkaFlags = params.UPGRADE_KAFKA ? """
+            --set kaffka-service.enabled=true \
+            --set kaffka-service.topics.enabled=true \
+            --set kaffka-service.topics.recreate=${params.RECREATE_TOPICS} \
+            --set kaffka-service.topics.bootstrapServer=kaffka-service:9092 \
+          """ : "--set kaffka-service.enabled=false"
+
+          sh """
+            helm upgrade --install ${RELEASE_NAME} ${CHART_PATH} \
+              --namespace test --create-namespace \
+              ${kafkaFlags} \
+              --set global.kafka.bootstrapServers=kaffka-service:9092 \
+              --set global.env=test \
+              --set elk.env=test
+          """
+
+          sh """
+            helm test ${RELEASE_NAME} \
+              --namespace test \
+              --timeout 3m --logs
+          """
+        }
+      }
+    }
+
+    stage('Manual Approval for PROD') {
+      when { expression { params.DEPLOY_ENV == 'prod' } }
+      steps {
+        timeout(time: 30, unit: 'MINUTES') {
+          input message: "Развернуть ${RELEASE_NAME} в PROD (namespace=prod)?"
+        }
+      }
+    }
+
+    stage('Deploy to prod') {
+      when { expression { params.DEPLOY_ENV == 'prod' } }
+      steps {
+        script {
+          def kafkaFlags = params.UPGRADE_KAFKA ? """
+            --set kaffka-service.enabled=true \
+            --set kaffka-service.topics.enabled=true \
+            --set kaffka-service.topics.recreate=${params.RECREATE_TOPICS} \
+            --set kaffka-service.topics.bootstrapServer=kaffka-service:9092 \
+          """ : "--set kaffka-service.enabled=false"
+
+          sh """
+            helm upgrade --install ${RELEASE_NAME} ${CHART_PATH} \
+              --namespace prod --create-namespace \
+              ${kafkaFlags} \
+              --set global.kafka.bootstrapServers=kaffka-service:9092 \
+              --set global.env=prod \
+              --set elk.env=prod
+          """
+        }
+      }
+    }
+  }
+
+  post {
+    success {
+      echo "Umbrella chart '${RELEASE_NAME}' deployed (env=${params.DEPLOY_ENV}, kafka=${params.UPGRADE_KAFKA}, recreateTopics=${params.RECREATE_TOPICS})."
+    }
+    failure {
+      echo "Umbrella chart '${RELEASE_NAME}' deploy FAILED (env=${params.DEPLOY_ENV})."
+    }
+  }
 }

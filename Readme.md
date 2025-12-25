@@ -70,7 +70,7 @@ Zipkin Dependencies
 
 ![Grafana allerting](img/zipkin_dependencis.jpg)
 
-Zipkin Transfer
+Zipkin Transfer - 4 services 41 spans
 
 ![Grafana allerting](img/zipkin_transfer.jpg)
 
