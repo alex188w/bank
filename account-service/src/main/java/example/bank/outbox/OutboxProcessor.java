@@ -8,9 +8,9 @@ import example.bank.model.OutboxEvent;
 import example.bank.repository.OutboxEventRepository;
 
 import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
@@ -20,44 +20,30 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 
-@Slf4j
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class OutboxProcessor {
 
     private final OutboxEventRepository outboxRepository;
     private final KafkaTemplate<String, Notification> kafkaTemplate;
-    private final ObjectMapper objectMapper;
-
-    public OutboxProcessor(OutboxEventRepository outboxRepository,
-            @Qualifier("notificationKafkaTemplate") KafkaTemplate<String, Notification> kafkaTemplate,
-            ObjectMapper objectMapper) {
-        this.outboxRepository = outboxRepository;
-        this.kafkaTemplate = kafkaTemplate;
-        this.objectMapper = objectMapper;
-    }
-
-    @Value("${app.outbox.enabled:true}")
-    private boolean enabled;
 
     @Value("${app.kafka.topics.notifications}")
     private String notificationsTopic;
 
+    private final ObjectMapper objectMapper;
+
     @PostConstruct
     public void start() {
-        if (!enabled) {
-            log.info("OutboxProcessor disabled");
-            return;
-        }
-
         Flux.interval(Duration.ofSeconds(1))
-                .concatMap(tick -> processBatch()) // <-- без параллельных тиков
+                .flatMap(tick -> processBatch())
                 .onErrorContinue((e, o) -> log.error("Ошибка при обработке outbox", e))
                 .subscribe();
     }
 
     private Mono<Void> processBatch() {
         return outboxRepository.findTop100ByProcessedFalseOrderByCreatedAtAsc()
-                .concatMap(this::processEvent) // <-- события тоже последовательно
+                .flatMap(this::processEvent)
                 .then();
     }
 
@@ -79,11 +65,7 @@ public class OutboxProcessor {
                                 result.getRecordMetadata().topic(),
                                 result.getRecordMetadata().partition(),
                                 result.getRecordMetadata().offset()))
-                .then(markProcessed(event))
-                .onErrorResume(ex -> {
-                    log.error("Outbox->Kafka send failed: eventId={}, topic={}", event.getId(), notificationsTopic, ex);
-                    return Mono.empty();
-                });
+                .then(markProcessed(event));
     }
 
     private Mono<Void> markProcessed(OutboxEvent event) {

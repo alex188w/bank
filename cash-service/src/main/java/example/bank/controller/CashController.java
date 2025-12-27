@@ -1,29 +1,23 @@
 package example.bank.controller;
 
-import java.math.BigDecimal;
-
+import example.bank.Notification;
+import example.bank.logging.CashAudit;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.reactive.function.client.WebClient;
-
-import reactor.core.publisher.Mono;
-import example.bank.Notification;
-
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
-import org.springframework.web.server.ServerWebExchange;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
+
+import java.math.BigDecimal;
 
 @Slf4j
 @RestController
@@ -36,7 +30,7 @@ public class CashController {
         private final @Qualifier("notificationKafkaTemplate") KafkaTemplate<String, Notification> kafkaTemplate;
 
         private final MeterRegistry meterRegistry;
-        private final CashObservability audit;
+        private final CashAudit audit;
 
         @Value("${app.kafka.topics.notifications}")
         private String notificationsTopic;
@@ -48,106 +42,101 @@ public class CashController {
                                 .defaultIfEmpty("unknown");
         }
 
-        private void inc(String metric, String result, String login, String accountId) {
-                Counter.builder(metric)
-                                .tag("result", result)
-                                .tag("login", login)
-                                .tag("account_id", accountId)
+        private void incBusiness(String type, String status) {
+                Counter.builder("business_operation_total")
+                                .tag("service", "cash")
+                                .tag("type", type) // deposit/withdraw/notify
+                                .tag("status", status) // success/failure
                                 .register(meterRegistry)
                                 .increment();
         }
 
-        private void incNotifFail(String login, String accountId, String type) {
+        private void incNotifFail(String type) {
                 Counter.builder("cash_notification_send_failed_total")
-                                .tag("login", login)
-                                .tag("account_id", accountId)
                                 .tag("type", type)
                                 .register(meterRegistry)
                                 .increment();
         }
 
         @PostMapping("/deposit/{accountId}")
-        public Mono<Void> deposit(ServerWebExchange exchange,
+        @Transactional
+        public Mono<Void> deposit(@RequestHeader(value = "traceparent", required = false) String traceparent,
                         @PathVariable Long accountId,
                         @RequestParam BigDecimal amount) {
 
-                log.info("Deposit request: id={}, amount={}", accountId, amount);
-
                 return currentLogin().flatMap(login -> {
-                        audit.depositRequested(exchange, login, accountId);
+                        audit.info("cash.deposit", "deposit", "requested",
+                                        "Deposit requested login=" + login + " accountId=" + accountId
+                                                        + " amount=\"\"");
 
-                        // безопасно прокинуть traceparent дальше 
-                        String tp = exchange.getRequest().getHeaders().getFirst("traceparent");
-
-                        return accountWebClient.post()
-                                        .uri("/accounts/{id}/deposit?amount={amount}", accountId, amount)
-                                        .headers(h -> {
-                                                if (tp != null)
-                                                        h.set("traceparent", tp);
-                                        })
-                                        .retrieve()
-                                        .bodyToMono(Void.class)
-                                        .then(sendNotification(exchange, accountId, "deposit", amount, null, login))
+                        return callAccount(traceparent, "/accounts/{id}/deposit?amount={amount}", accountId, amount)
+                                        .then(sendNotification(accountId, "deposit", amount, login))
                                         .doOnSuccess(v -> {
-                                                inc("cash_deposit_total", "success", login, String.valueOf(accountId));
-                                                audit.depositSuccess(exchange, login, accountId);
+                                                incBusiness("deposit", "success");
+                                                audit.info("cash.deposit", "deposit", "success",
+                                                                "Deposit success login=" + login + " accountId="
+                                                                                + accountId + " amount=\"\"");
                                         })
-                                        .doOnError(e -> {
-                                                inc("cash_deposit_total", "failure", login, String.valueOf(accountId));
-                                                audit.depositFailed(exchange, login, accountId, e);
+                                        .doOnError(ex -> {
+                                                incBusiness("deposit", "failure");
+                                                audit.error("cash.deposit", "deposit", "failure",
+                                                                "Deposit failed login=" + login + " accountId="
+                                                                                + accountId + " amount=\"\"",
+                                                                ex);
                                         });
                 });
         }
 
         @PostMapping("/withdraw/{accountId}")
-        public Mono<Void> withdraw(ServerWebExchange exchange,
+        @Transactional
+        public Mono<Void> withdraw(@RequestHeader(value = "traceparent", required = false) String traceparent,
                         @PathVariable Long accountId,
                         @RequestParam BigDecimal amount) {
 
-                log.info("Withdraw request: id={}, amount={}", accountId, amount);
-
                 return currentLogin().flatMap(login -> {
-                        audit.withdrawRequested(exchange, login, accountId);
+                        audit.info("cash.withdraw", "withdraw", "requested",
+                                        "Withdraw requested login=" + login + " accountId=" + accountId
+                                                        + " amount=\"\"");
 
-                        String tp = exchange.getRequest().getHeaders().getFirst("traceparent");
-
-                        return accountWebClient.post()
-                                        .uri("/accounts/{id}/withdraw?amount={amount}", accountId, amount)
-                                        .headers(h -> {
-                                                if (tp != null)
-                                                        h.set("traceparent", tp);
-                                        })
-                                        .retrieve()
-                                        .bodyToMono(Void.class)
-                                        .then(sendNotification(exchange, accountId, "withdraw", amount, null, login))
+                        return callAccount(traceparent, "/accounts/{id}/withdraw?amount={amount}", accountId, amount)
+                                        .then(sendNotification(accountId, "withdraw", amount, login))
                                         .doOnSuccess(v -> {
-                                                inc("cash_withdraw_total", "success", login, String.valueOf(accountId));
-                                                audit.withdrawSuccess(exchange, login, accountId);
+                                                incBusiness("withdraw", "success");
+                                                audit.info("cash.withdraw", "withdraw", "success",
+                                                                "Withdraw success login=" + login + " accountId="
+                                                                                + accountId + " amount=\"\"");
                                         })
-                                        .doOnError(e -> {
-                                                inc("cash_withdraw_total", "failure", login, String.valueOf(accountId));
-                                                audit.withdrawFailed(exchange, login, accountId, e);
+                                        .doOnError(ex -> {
+                                                incBusiness("withdraw", "failure");
+                                                audit.error("cash.withdraw", "withdraw", "failure",
+                                                                "Withdraw failed login=" + login + " accountId="
+                                                                                + accountId + " amount=\"\"",
+                                                                ex);
                                         });
                 });
         }
 
-        private Mono<Void> sendNotification(ServerWebExchange exchange,
-                        Long accountId,
-                        String type,
-                        BigDecimal amount,
-                        String customMessage,
-                        String login) {
+        private Mono<Void> callAccount(String traceparent, String uri, Long accountId, BigDecimal amount) {
+                return accountWebClient.post()
+                                .uri(uri, accountId, amount)
+                                .headers(h -> {
+                                        if (traceparent != null && !traceparent.isBlank()) {
+                                                h.set("traceparent", traceparent);
+                                        }
+                                })
+                                .retrieve()
+                                .bodyToMono(Void.class);
+        }
 
-                // amount в лог не пишем, но в уведомлении он есть (это не лог)
-                String message = switch (type.toLowerCase()) {
+        private Mono<Void> sendNotification(Long accountId, String type, BigDecimal amount, String login) {
+                // amount в лог НЕ пишем, но в уведомлении он есть (это не лог)
+                String message = switch (type) {
                         case "deposit" -> String.format("Пополнение счёта №%d на сумму %.2f", accountId, amount);
                         case "withdraw" -> String.format("Снятие со счёта №%d на сумму %.2f", accountId, amount);
-                        default -> (customMessage != null)
-                                        ? customMessage
-                                        : String.format("Операция со счётом №%d: сумма %.2f", accountId, amount);
+                        default -> String.format("Операция со счётом №%d: сумма %.2f", accountId, amount);
                 };
 
-                Notification notification = new Notification(
+                Notification n = new Notification(
                                 type,
                                 null,
                                 null,
@@ -156,22 +145,27 @@ public class CashController {
                                 amount,
                                 accountId);
 
-                return Mono.fromFuture(kafkaTemplate.send(notificationsTopic, String.valueOf(accountId), notification))
-                                .doOnSuccess(result -> {
-                                        logKafkaSuccess(result);
-                                        audit.notificationSent(exchange, login, accountId, type);
+                return Mono.fromFuture(kafkaTemplate.send(notificationsTopic, String.valueOf(accountId), n))
+                                .doOnSuccess(this::logKafkaSuccess)
+                                .doOnSuccess(r -> {
+                                        incBusiness("notify", "success");
+                                        audit.info("cash.notify", "notify", "success",
+                                                        "Notification sent login=" + login + " accountId=" + accountId
+                                                                        + " type=" + type + " amount=\"\"");
                                 })
-                                .doOnError(e -> {
-                                        log.error("Ошибка при отправке уведомления в Kafka: {}", e.getMessage(), e);
-                                        incNotifFail(login, String.valueOf(accountId), type);
-                                        audit.notificationFailed(exchange, login, accountId, type, e);
+                                .doOnError(ex -> {
+                                        incBusiness("notify", "failure");
+                                        incNotifFail(type);
+                                        audit.error("cash.notify", "notify", "failure",
+                                                        "Notification failed login=" + login + " accountId=" + accountId
+                                                                        + " type=" + type + " amount=\"\"",
+                                                        ex);
                                 })
                                 .then();
         }
 
         private void logKafkaSuccess(SendResult<String, Notification> result) {
                 var m = result.getRecordMetadata();
-                log.info("Отправлено уведомление в Kafka: topic={}, partition={}, offset={}",
-                                m.topic(), m.partition(), m.offset());
+                log.info("Kafka notification ok topic={} partition={} offset={}", m.topic(), m.partition(), m.offset());
         }
 }

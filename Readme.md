@@ -1,3 +1,101 @@
+## Работа с замечаниями Спринт 12:
+
+1. Архитектура логирования
+
+В микросервисах: account-service, cash-service - исправлена архитектура логирования, применен Log4j2 - Kafka appender и chassis-паттерн.
+
+Логирование отделено от бизнес-логики, бизнес-код не связан с инфраструктурой доставки логов.
+
+2. Нейминг метрик
+
+Были использованы общие имена с метками (labels) - пример для cash-service:
+
+business_operation_total с метками type="deposit", service="cash", status="success".
+
+    private void incBusiness(String type, String status) {
+                    Counter.builder("business_operation_total")
+                                    .tag("service", "cash")
+                                    .tag("type", type) // deposit/withdraw/notify
+                                    .tag("status", status) // success/failure
+                                    .register(meterRegistry)
+                                    .increment();
+            }
+
+Пример для account-service: account-service\src\main\resources\log4j2-spring.xml:
+
+      <!-- Единый JSON-контракт ("шасси") -->
+      <PatternLayout pattern="{&quot;ts&quot;:&quot;%d{yyyy-MM-dd'T'HH:mm:ss.SSSX}&quot;,
+        &quot;level&quot;:&quot;%p&quot;,
+        &quot;service&quot;:&quot;${APP_NAME}&quot;,
+        &quot;env&quot;:&quot;${ENV}&quot;,
+        &quot;event&quot;:{&quot;action&quot;:&quot;%X{event.action}&quot;},
+        &quot;operation&quot;:{&quot;type&quot;:&quot;%X{operation.type}&quot;,&quot;status&quot;:&quot;%X{operation.status}&quot;},
+        &quot;message&quot;:&quot;%enc{%m}{JSON}&quot;,
+        &quot;trace.id&quot;:&quot;%X{traceId}&quot;,
+        &quot;span.id&quot;:&quot;%X{spanId}&quot;}
+        %n"/>
+
+В результате лог сервисов стал более понятным и информативным, что упрощает создание графиков в Grafana.
+
+
+Пример вывода лога в UI Kibana account-service (неполная часть):
+
+    {
+    "@timestamp": [
+        "2025-12-27T11:25:26.907Z"
+    ],
+    "event.action": [
+        "account.deposit"
+    ],
+    "event.action.keyword": [
+        "account.deposit"
+    ],
+    "message": [
+        "Deposit success login=9e42428d-ed5b-44a1-bcad-6804bf3ac1b8 accountId=47 amount=\"\""
+    ],
+    "message.keyword": [
+        "Deposit success login=9e42428d-ed5b-44a1-bcad-6804bf3ac1b8 accountId=47 amount=\"\""
+    ],
+    "operation.status": [
+        "success"
+    ],
+    "operation.status.keyword": [
+        "success"
+    ],
+    "operation.type": [
+        "deposit"
+    ],
+    "operation.type.keyword": [
+        "deposit"
+    ],
+    "service.name": [
+        "account-service"
+    ],
+    "service.name.keyword": [
+        "account-service"
+    ],
+    "span.id": [
+        "ac210c3bf79de730"
+    ],
+    "span.id.keyword": [
+        "ac210c3bf79de730"
+    ],
+    "trace.id": [
+        "694fc226fd6b7eee844131910b99baf4"
+    ],
+    "trace.id.keyword": [
+        "694fc226fd6b7eee844131910b99baf4"
+    ],
+    "ts": [
+        "2025-12-27T11:25:26.907Z"
+    ],
+    "_id": "UBGOX5sBSFBmHvE_aMPe",
+    "_index": "bank-logs-dev-2025.12.27",
+    "_score": null
+    }
+
+
+
 ## Работа с замечаниями и предложениями Спринт 11:
 
 1. Тест CashControllerKafkaIT исправлено:
